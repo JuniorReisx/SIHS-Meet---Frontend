@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Calendar, Clock, Users, MapPin, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import  logo  from '/src/assets/SIHS.jpg' 
 
 interface Reuniao {
   id: number;
@@ -145,7 +146,7 @@ export function Home() {
             <div className="flex items-center gap-4">
               <div className="bg-white p-3 rounded-xl shadow-md border border-gray-200">
                 <img 
-                  src="/src/assets/SIHS.jpg" 
+                  src={logo} 
                   alt="Logo SIHS" 
                   className="h-16 w-16 object-contain"
                 />
