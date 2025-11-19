@@ -158,9 +158,6 @@ export function Home() {
                 </p>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-3 rounded-xl shadow-lg">
-              <p className="text-white text-sm font-bold tracking-wide">Sistema de Reuniões</p>
-            </div>
           </div>
         </div>
       </header>
