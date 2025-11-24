@@ -1,12 +1,27 @@
 import { useState } from "react";
 import { User, Lock, Eye, EyeOff, LogIn, Briefcase, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-export function Login() {
-  const [tipoLogin, setTipoLogin] = useState("usuario"); // "usuario" ou "admin"
+export default function Login() {
+  const navigate = useNavigate();
+  
+  const [tipoLogin, setTipoLogin] = useState("usuario");
   const [usuario, setUsuario] = useState("");
   const [setor, setSetor] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Credenciais válidas
+  const CREDENCIAIS = {
+    admin: {
+      usuario: "admin",
+      senha: "admin123"
+    },
+    usuario: {
+      usuario: "usuario",
+      senha: "user123"
+    }
+  };
 
   const handleSubmit = () => {
     if (tipoLogin === "admin") {
@@ -15,33 +30,33 @@ export function Login() {
         return;
       }
       
-      // Salvar autenticação no localStorage
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", "admin");
-      localStorage.setItem("username", usuario);
-      
-      console.log("Login Admin:", { usuario, password });
-      alert("Login de administrador realizado com sucesso!");
-      
-      // Redirecionar para página de admin
-      window.location.href = "/ScheduledMeetingsADMIN";
+      if (usuario === CREDENCIAIS.admin.usuario && password === CREDENCIAIS.admin.senha) {
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("username", usuario);
+        
+        alert("Login de administrador realizado com sucesso!");
+        navigate("/ScheduledMeetingsADMIN");
+      } else {
+        alert("Usuário ou senha incorretos!");
+      }
     } else {
       if (!usuario || !setor || !password) {
         alert("Por favor, preencha todos os campos");
         return;
       }
       
-      // Salvar autenticação no localStorage
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", "usuario");
-      localStorage.setItem("username", usuario);
-      localStorage.setItem("userSetor", setor);
-      
-      console.log("Login Usuário:", { usuario, setor, password });
-      alert("Login realizado com sucesso!");
-      
-      // Redirecionar para página de usuário
-      window.location.href = "/ScheduledMeetings";
+      if (usuario === CREDENCIAIS.usuario.usuario && password === CREDENCIAIS.usuario.senha) {
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userRole", "usuario");
+        localStorage.setItem("username", usuario);
+        localStorage.setItem("userSetor", setor);
+        
+        alert("Login realizado com sucesso!");
+        navigate("/ScheduledMeetings");
+      } else {
+        alert("Usuário ou senha incorretos!");
+      }
     }
   };
 
@@ -54,9 +69,7 @@ export function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Card de Login */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header */}
           <div className={`${
             tipoLogin === "admin" 
               ? "bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800" 
@@ -75,7 +88,6 @@ export function Login() {
             <p className="text-blue-100">Sistema de Gerenciamento de Reuniões</p>
           </div>
 
-          {/* Seletor de Tipo de Login */}
           <div className="p-6 pb-0">
             <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
@@ -101,9 +113,7 @@ export function Login() {
             </div>
           </div>
 
-          {/* Formulário */}
           <div className="p-8 space-y-6">
-            {/* Campo Usuário */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 {tipoLogin === "admin" ? "Usuário Admin" : "Usuário"}
@@ -120,12 +130,11 @@ export function Login() {
                   className={`w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-colors ${
                     tipoLogin === "admin" ? "focus:border-purple-500" : "focus:border-blue-500"
                   }`}
-                  placeholder={tipoLogin === "admin" ? "admin_usuario" : "seu_usuario"}
+                  placeholder={tipoLogin === "admin" ? "admin" : "usuario"}
                 />
               </div>
             </div>
 
-            {/* Campo Setor - apenas para usuário comum */}
             {tipoLogin === "usuario" && (
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -147,7 +156,6 @@ export function Login() {
               </div>
             )}
 
-            {/* Campo Senha */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Senha
@@ -176,7 +184,6 @@ export function Login() {
               </div>
             </div>
 
-            {/* Botão de Login */}
             <button
               onClick={handleSubmit}
               className={`w-full font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 ${
