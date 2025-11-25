@@ -1,19 +1,11 @@
 import { Save, X } from "lucide-react";
+import type { Meeting } from "../../types/types";
 
-interface Reuniao {
-  id: number;
-  titulo: string;
-  data: string;
-  horario: string;
-  local: string;
-  participantes: string;
-  descricao: string;
-}
 
 interface MeetingFormProps {
-  formData: Omit<Reuniao, "id">;
+  formData: Omit<Meeting, "id">;
   modoEdicao: boolean;
-  onFormChange: (data: Omit<Reuniao, "id">) => void;
+  onFormChange: (data: Omit<Meeting, "id">) => void;
   onSubmit: () => void;
   onCancel: () => void;
 }
@@ -47,9 +39,9 @@ export function MeetingForm({
             </label>
             <input
               type="text"
-              value={formData.titulo}
+              value={formData.title}
               onChange={(e) =>
-                onFormChange({ ...formData, titulo: e.target.value })
+                onFormChange({ ...formData, title: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
               placeholder="Ex: Reunião de Planejamento Trimestral"
@@ -62,9 +54,9 @@ export function MeetingForm({
             </label>
             <input
               type="date"
-              value={formData.data}
+              value={formData.date}
               onChange={(e) =>
-                onFormChange({ ...formData, data: e.target.value })
+                onFormChange({ ...formData, date: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
             />
@@ -76,9 +68,9 @@ export function MeetingForm({
             </label>
             <input
               type="time"
-              value={formData.horario}
+              value={formData.time}
               onChange={(e) =>
-                onFormChange({ ...formData, horario: e.target.value })
+                onFormChange({ ...formData, time: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
             />
@@ -89,9 +81,9 @@ export function MeetingForm({
               Local *
             </label>
             <select
-              value={formData.local}
+              value={formData.location}
               onChange={(e) =>
-                onFormChange({ ...formData, local: e.target.value })
+                onFormChange({ ...formData, location: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
             >
@@ -110,11 +102,11 @@ export function MeetingForm({
             <input
               type="number"
               min="1"
-              value={formData.participantes}
+              value={formData.participants}
               onChange={(e) =>
                 onFormChange({
                   ...formData,
-                  participantes: e.target.value,
+                  participants: e.target.value,
                 })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
@@ -127,9 +119,9 @@ export function MeetingForm({
               Descrição/Pauta
             </label>
             <textarea
-              value={formData.descricao}
+              value={formData.description}
               onChange={(e) =>
-                onFormChange({ ...formData, descricao: e.target.value })
+                onFormChange({ ...formData, description: e.target.value })
               }
               rows={4}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none"

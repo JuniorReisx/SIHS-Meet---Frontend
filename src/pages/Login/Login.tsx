@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { User, Lock, Eye, EyeOff, LogIn, Briefcase, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { databaseCredentials } from "../../data/data";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,18 +12,6 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Credenciais válidas
-  const CREDENCIAIS = {
-    admin: {
-      usuario: "admin",
-      senha: "admin123"
-    },
-    usuario: {
-      usuario: "usuario",
-      senha: "user123"
-    }
-  };
-
   const handleSubmit = () => {
     if (tipoLogin === "admin") {
       if (!usuario || !password) {
@@ -30,7 +19,7 @@ export default function Login() {
         return;
       }
       
-      if (usuario === CREDENCIAIS.admin.usuario && password === CREDENCIAIS.admin.senha) {
+      if (usuario === databaseCredentials[0].user && password === databaseCredentials[0].password) {
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", usuario);
@@ -46,7 +35,7 @@ export default function Login() {
         return;
       }
       
-      if (usuario === CREDENCIAIS.usuario.usuario && password === CREDENCIAIS.usuario.senha) {
+      if (usuario === databaseCredentials[1].user && password === databaseCredentials[1].password) {
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("userRole", "usuario");
         localStorage.setItem("username", usuario);

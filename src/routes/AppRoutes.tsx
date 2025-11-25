@@ -21,37 +21,37 @@ function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode,
 
 export function AppRoutes() {
   return (
-    <Router>
-      <Routes>
-        {/* Rota pública - Login */}
-        <Route path="/login" element={<Login />} />
-        
-        {/* Rota inicial redireciona para login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        
-        {/* Rotas protegidas - Usuário Normal */}
-        <Route 
-          path="/ScheduledMeetings" 
-          element={
-            <ProtectedRoute requiredRole="usuario">
-              <Home />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Rotas protegidas - Admin */}
-        <Route 
-          path="/ScheduledMeetingsADMIN" 
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <HomeADMIN />
-            </ProtectedRoute>
-          } 
-        />
+      <Router>
+        <Routes>
+          {/* Rota pública - Login */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* Rota inicial redireciona para login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          
+          {/* Rotas protegidas - Usuário Normal */}
+          <Route 
+            path="/ScheduledMeetings" 
+            element={
+              <ProtectedRoute requiredRole="usuario">
+                <Home />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Rotas protegidas - Admin */}
+          <Route 
+            path="/ScheduledMeetingsADMIN" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <HomeADMIN />
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Rota 404 - Qualquer outra rota redireciona para login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+          {/* Rota 404 - Qualquer outra rota redireciona para login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
   );
 }

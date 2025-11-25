@@ -1,9 +1,17 @@
-export interface Reuniao {
+export interface Meeting {
   id: number;
-  titulo: string;
-  data: string;
-  horario: string;
-  local: string;
-  participantes: string;
-  descricao: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  participants: string;
+  description: string;
 }
+
+
+export interface Credentials {
+  user: string;
+  password: string;
+  departments?: string;
+}
+

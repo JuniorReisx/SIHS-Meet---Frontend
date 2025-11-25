@@ -4,89 +4,34 @@ import { ScheduledMeetings } from "../../components/ScheduledMeetings/ScheduledM
 import { MeetingForm } from "../../components/MeetingForm/MeetingForm";
 import { HeaderUser } from "../../components/Header/HeaderUser";
 import { FooterUser } from "../../components/Footer/FooterUser";
-
-interface Reuniao {
-  id: number;
-  titulo: string;
-  data: string;
-  horario: string;
-  local: string;
-  participantes: string;
-  descricao: string;
-}
+import { database } from "../../data/data";
+import type { Meeting } from "../../types/types";
 
 export function Home() {
-  const [reunioes, setReunioes] = useState<Reuniao[]>([
-    {
-      id: 1,
-      titulo: "Planejamento de Obras - Estação de Tratamento",
-      data: "2025-11-25",
-      horario: "09:00",
-      local: "Sala de Reuniões - SIHS",
-      participantes: "Equipe de Engenharia, Diretoria",
-      descricao: "Discussão sobre cronograma e orçamento da nova estação",
-    },
-    {
-      id: 2,
-      titulo: "Revisão de Contratos - Fornecedores",
-      data: "2025-11-28",
-      horario: "14:00",
-      local: "Auditório Administrativo",
-      participantes: "Setor Jurídico, Compras",
-      descricao: "Análise das renovações e novos contratos de fornecedores",
-    },
-    {
-      id: 3,
-      titulo: "Reunião de Alinhamento - Projetos Internos",
-      data: "2025-12-02",
-      horario: "10:30",
-      local: "Sala 03 - SIHS",
-      participantes: "Gestores de Setor",
-      descricao: "Planejamento trimestral das atividades internas",
-    },
-    {
-      id: 4,
-      titulo: "Apresentação de Resultados - TI",
-      data: "2025-12-05",
-      horario: "16:00",
-      local: "Sala de Conferências",
-      participantes: "Equipe de TI, Diretoria",
-      descricao: "Demonstração dos indicadores e melhorias do setor de TI",
-    },
-    {
-      id: 5,
-      titulo: "Reunião Extraordinária - Manutenção",
-      data: "2025-12-10",
-      horario: "08:00",
-      local: "Oficina de Manutenção",
-      participantes: "Equipe de Manutenção",
-      descricao: "Discussão urgente sobre falha em equipamento crítico",
-    },
-  ]);
-
+  const [reunioes, setReunioes] = useState<Meeting[]>(database);
   const [modoEdicao, setModoEdicao] = useState(false);
-  const [reuniaoSelecionada, setReuniaoSelecionada] = useState<Reuniao | null>(
+  const [reuniaoSelecionada, setReuniaoSelecionada] = useState<Meeting | null>(
     null
   );
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
-  const [formData, setFormData] = useState<Omit<Reuniao, "id">>({
-    titulo: "",
-    data: "",
-    horario: "",
-    local: "",
-    participantes: "",
-    descricao: "",
+  const [formData, setFormData] = useState<Omit<Meeting, "id">>({
+    title: "",
+    date: "",
+    time: "",
+    location: "",
+    participants: "",
+    description: "",
   });
 
   const resetForm = () => {
     setFormData({
-      titulo: "",
-      data: "",
-      horario: "",
-      local: "",
-      participantes: "",
-      descricao: "",
+      title: "",
+      date: "",
+      time: "",
+      location: "",
+      participants: "",
+      description: "",
     });
     setModoEdicao(false);
     setReuniaoSelecionada(null);
@@ -95,11 +40,11 @@ export function Home() {
 
   const handleSubmit = () => {
     if (
-      !formData.titulo ||
-      !formData.data ||
-      !formData.horario ||
-      !formData.local ||
-      !formData.participantes
+      !formData.title ||
+      !formData.date ||
+      !formData.time ||
+      !formData.location ||
+      !formData.participants
     ) {
       alert("Por favor, preencha todos os campos obrigatórios");
       return;
@@ -114,7 +59,7 @@ export function Home() {
         )
       );
     } else {
-      const novaReuniao: Reuniao = {
+      const novaReuniao: Meeting = {
         ...formData,
         id: Math.max(0, ...reunioes.map((r) => r.id)) + 1,
       };

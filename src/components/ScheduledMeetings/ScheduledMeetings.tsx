@@ -1,17 +1,8 @@
 import { Calendar, Clock, Users, MapPin } from "lucide-react";
-
-interface Reuniao {
-  id: number;
-  titulo: string;
-  data: string;
-  horario: string;
-  local: string;
-  participantes: string;
-  descricao: string;
-}
+import type { Meeting } from "../../types/types";
 
 interface ScheduledMeetingsProps {
-  reunioes: Reuniao[];
+  reunioes: Meeting[];
 }
 
 export function ScheduledMeetings({ reunioes }: ScheduledMeetingsProps) {
@@ -43,7 +34,7 @@ export function ScheduledMeetings({ reunioes }: ScheduledMeetingsProps) {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-800 flex-1">
-                  {reuniao.titulo}
+                  {reuniao.title}
                 </h3>
               </div>
 
@@ -51,30 +42,30 @@ export function ScheduledMeetings({ reunioes }: ScheduledMeetingsProps) {
                 <div className="flex items-center gap-3 text-gray-600">
                   <Calendar size={20} className="text-blue-600" />
                   <span className="font-medium">
-                    {formatData(reuniao.data)}
+                    {formatData(reuniao.date)}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-600">
                   <Clock size={20} className="text-blue-600" />
-                  <span className="font-medium">{reuniao.horario}</span>
+                  <span className="font-medium">{reuniao.time}</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-600">
                   <MapPin size={20} className="text-blue-600" />
-                  <span className="font-medium">{reuniao.local}</span>
+                  <span className="font-medium">{reuniao.location}</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-600">
                   <Users size={20} className="text-blue-600" />
-                  <span className="font-medium">{reuniao.participantes}</span>
+                  <span className="font-medium">{reuniao.participants}</span>
                 </div>
               </div>
 
-              {reuniao.descricao && (
+              {reuniao.description && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-sm font-semibold text-gray-700 mb-2">
                     Descrição:
                   </p>
                   <p className="text-gray-600 leading-relaxed">
-                    {reuniao.descricao}
+                    {reuniao.description}
                   </p>
                 </div>
               )}
