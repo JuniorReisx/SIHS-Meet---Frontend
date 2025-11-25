@@ -1,5 +1,5 @@
 import type { Meeting } from "../types/types";
-import type { Credentials } from "../types/types";
+import type { UserLoginCredentials } from "../types/types";
 
 export const database: Meeting[] = [
     {
@@ -49,14 +49,13 @@ export const database: Meeting[] = [
     }
 ];
 
-export const databaseCredentials: Credentials[] = [
+export const databaseCredentials: UserLoginCredentials[] = [
     {
         user: "admin",
         password: "admin123"
     },
     {
-        user: "emanuel",
-        departments: "SIHS",
+        user: "emanoel",
         password: "user123",
     }
 ];

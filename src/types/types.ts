@@ -9,9 +9,23 @@ export interface Meeting {
 }
 
 
-export interface Credentials {
+export interface UserLoginCredentials {
   user: string;
   password: string;
-  departments?: string;
 }
 
+export interface UserCredentials {
+  user: string;
+  password: string;
+  departments: string;
+}
+
+export interface AdminLoginCredentials {
+  user: string;
+  password: string;
+}
+
+export interface AdminCredentials {
+  user: string;
+  password: string;
+}
