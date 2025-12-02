@@ -235,7 +235,7 @@ export function HomeADMIN() {
               className="w-full bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"
             >
               <Plus size={24} />
-              Nova Reunião (Poder Admin)
+              Nova Reunião
             </button>
           </div>
         )}
