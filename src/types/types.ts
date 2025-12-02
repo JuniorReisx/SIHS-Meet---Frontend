@@ -1,13 +1,15 @@
+// src/types/types.ts
+
 export interface Meeting {
   id: number;
   title: string;
   date: string;
   time: string;
+  endTime?: string;  
   location: string;
   participants: string;
   description: string;
 }
-
 
 export interface UserLoginCredentials {
   user: string;

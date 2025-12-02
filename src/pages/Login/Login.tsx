@@ -8,13 +8,30 @@ import {
   Shield,
   X,
   CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { databaseCredentials } from "../../data/data";
+
+const API_URL = "https://sihs-meeting-backend.onrender.com/api";
+
+// Interface para tipar a resposta da API
+interface LoginResponse {
+  token?: string;
+  user?: {
+    id: string;
+    username: string;
+    email?: string;
+    role?: string;
+  };
+  message?: string;
+}
 
 export default function Login() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
@@ -23,56 +40,86 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = () => {
-    if (tipoLogin === "admin") {
-      if (!usuario || !password) {
-        alert("Por favor, preencha todos os campos");
-        return;
+  // Dados temporários para o modal de confirmação
+  const [loginData, setLoginData] = useState<LoginResponse | null>(null);
+
+  const handleSubmit = async () => {
+    // Validação básica
+    if (!usuario || !password) {
+      setError("Por favor, preencha todos os campos");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Determina o endpoint baseado no tipo de login
+      const endpoint = tipoLogin === "admin" 
+        ? `${API_URL}/admin/login` 
+        : `${API_URL}/users/login`; 
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: usuario,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Usuário ou senha incorretos!");
       }
 
-      if (
-        usuario === databaseCredentials[0].user &&
-        password === databaseCredentials[0].password
-      ) {
-        // Abre o modal de confirmação
-        handleOpen();
-      } else {
-        alert("Usuário ou senha incorretos!");
-      }
-    } else {
-      if (!usuario || !password) {
-        alert("Por favor, preencha todos os campos");
-        return;
-      }
-
-      if (
-        usuario === databaseCredentials[1].user &&
-        password === databaseCredentials[1].password
-      ) {
-        // Abre o modal de confirmação
-        handleOpen();
-      } else {
-        alert("Usuário ou senha incorretos!");
-      }
+      // Salva os dados da resposta para usar no modal
+      setLoginData(data as LoginResponse);
+      
+      // Abre o modal de confirmação
+      handleOpen();
+    } catch (err) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Erro ao fazer login. Tente novamente.";
+      setError(errorMessage);
+      console.error("Erro no login:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleConfirmLogin = () => {
+    if (!loginData) return;
+
+    // Salva as informações no localStorage
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("userRole", tipoLogin);
+    localStorage.setItem("username", usuario);
+    
+    // Se o backend retornar um token, salve-o também
+    if (loginData.token) {
+      localStorage.setItem("authToken", loginData.token);
+    }
+
+    // Se houver outros dados do usuário, salve-os
+    if (loginData.user) {
+      localStorage.setItem("userData", JSON.stringify(loginData.user));
+    }
+
+    // Navega para a página apropriada
     if (tipoLogin === "admin") {
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", "admin");
-      localStorage.setItem("username", usuario);
       navigate("/ScheduledMeetingsADMIN");
     } else {
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", "usuario");
-      localStorage.setItem("username", usuario);
       navigate("/ScheduledMeetings");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !loading) {
       handleSubmit();
     }
   };
@@ -106,22 +153,30 @@ export default function Login() {
           <div className="p-6 pb-0">
             <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => setTipoLogin("usuario")}
+                onClick={() => {
+                  setTipoLogin("usuario");
+                  setError("");
+                }}
+                disabled={loading}
                 className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all duration-200 ${
                   tipoLogin === "usuario"
                     ? "bg-white text-blue-600 shadow-md"
                     : "text-gray-600 hover:text-gray-800"
-                }`}
+                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Usuário
               </button>
               <button
-                onClick={() => setTipoLogin("admin")}
+                onClick={() => {
+                  setTipoLogin("admin");
+                  setError("");
+                }}
+                disabled={loading}
                 className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all duration-200 ${
                   tipoLogin === "admin"
                     ? "bg-white text-purple-600 shadow-md"
                     : "text-gray-600 hover:text-gray-800"
-                }`}
+                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Admin
               </button>
@@ -129,6 +184,14 @@ export default function Login() {
           </div>
 
           <div className="p-8 space-y-6">
+            {/* Mensagem de erro */}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3 animate-shake">
+                <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 {tipoLogin === "admin" ? "Usuário Admin" : "Usuário"}
@@ -140,17 +203,22 @@ export default function Login() {
                 <input
                   type="text"
                   value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
+                  onChange={(e) => {
+                    setUsuario(e.target.value);
+                    setError("");
+                  }}
                   onKeyPress={handleKeyPress}
+                  disabled={loading}
                   className={`w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-colors ${
                     tipoLogin === "admin"
                       ? "focus:border-purple-500"
                       : "focus:border-blue-500"
-                  }`}
+                  } ${loading ? "bg-gray-100 cursor-not-allowed" : ""}`}
                   placeholder={tipoLogin === "admin" ? "admin" : "usuario"}
                 />
               </div>
             </div>
+            
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Senha
@@ -162,18 +230,23 @@ export default function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError("");
+                  }}
                   onKeyPress={handleKeyPress}
+                  disabled={loading}
                   className={`w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-colors ${
                     tipoLogin === "admin"
                       ? "focus:border-purple-500"
                       : "focus:border-blue-500"
-                  }`}
+                  } ${loading ? "bg-gray-100 cursor-not-allowed" : ""}`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -183,18 +256,28 @@ export default function Login() {
 
             <button
               onClick={handleSubmit}
+              disabled={loading}
               className={`w-full font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 ${
                 tipoLogin === "admin"
                   ? "bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white"
                   : "bg-gradient-to-r from-gray-800 via-slate-700 to-gray-800 hover:from-gray-700 hover:to-gray-900 text-white"
-              }`}
+              } ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
             >
-              {tipoLogin === "admin" ? (
-                <Shield size={20} />
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Entrando...</span>
+                </>
               ) : (
-                <LogIn size={20} />
+                <>
+                  {tipoLogin === "admin" ? (
+                    <Shield size={20} />
+                  ) : (
+                    <LogIn size={20} />
+                  )}
+                  {tipoLogin === "admin" ? "Entrar como Admin" : "Entrar"}
+                </>
               )}
-              {tipoLogin === "admin" ? "Entrar como Admin" : "Entrar"}
             </button>
           </div>
         </div>
@@ -234,7 +317,7 @@ export default function Login() {
               </div>
               
               <h2 className="text-white text-center font-bold text-2xl">
-                Confirmar Login
+                Login Bem-sucedido!
               </h2>
               <p className="text-white/90 text-center mt-1 text-sm">
                 {tipoLogin === "admin" ? "Acesso Administrativo" : "Acesso de Usuário"}
@@ -293,6 +376,15 @@ export default function Login() {
         }
         .animate-fadeIn {
           animation: fadeIn 0.2s ease-out;
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-10px); }
+          75% { transform: translateX(10px); }
+        }
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
         }
       `}</style>
     </div>

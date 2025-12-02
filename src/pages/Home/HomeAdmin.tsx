@@ -1,12 +1,19 @@
-import { useState } from "react";
-import { Calendar, Clock, MapPin, Users, FileText, Edit, Trash2, Plus, X, Shield, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Clock, MapPin, Users, FileText, Edit, Trash2, Plus, X, Shield, ChevronDown, ChevronUp, Loader2, AlertCircle } from "lucide-react";
 import { HeaderAdmin } from "../../components/Header/HeaderAdmin";
-import { database } from "../../data/data";
+import { 
+  getAllMeetings, 
+  createMeeting, 
+  updateMeeting, 
+  deleteMeeting 
+} from "../../services/meetingService";
 import type { Meeting } from "../../types/types";
 
 export function HomeADMIN() {
-  // Estado para gerenciar as reuniões (inicializado com os dados do database)
-  const [meetings, setMeetings] = useState<Meeting[]>(database);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   
   const [editMode, setEditMode] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -17,16 +24,38 @@ export function HomeADMIN() {
     title: "",
     date: "",
     time: "",
+    endTime: "",
     location: "",
     participants: "",
     description: "",
   });
+
+  // Carregar reuniões ao montar o componente
+  useEffect(() => {
+    loadMeetings();
+  }, []);
+
+  const loadMeetings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getAllMeetings();
+      setMeetings(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro ao carregar reuniões";
+      setError(errorMessage);
+      console.error("Erro ao carregar reuniões:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
       title: "",
       date: "",
       time: "",
+      endTime: "",
       location: "",
       participants: "",
       description: "",
@@ -37,39 +66,62 @@ export function HomeADMIN() {
     setShowForm(false);
   };
 
-  const handleSubmit = () => {
-    if (!formData.title || !formData.date || !formData.time || !formData.location || !formData.participants) {
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.date || !formData.time || !formData.endTime || !formData.location || !formData.participants) {
       alert("Por favor, preencha todos os campos obrigatórios");
       return;
     }
 
-    if (editMode && selectedMeeting) {
-      setMeetings(meetings.map((m) => m.id === selectedMeeting.id ? { ...formData, id: selectedMeeting.id } : m));
-      alert("Reunião atualizada com sucesso!");
-    } else {
-      const newMeeting: Meeting = {
-        ...formData,
-        id: Math.max(0, ...meetings.map((m) => m.id)) + 1,
-      };
-      setMeetings([...meetings, newMeeting]);
-      alert("Reunião criada com sucesso!");
+    setSubmitting(true);
+    try {
+      if (editMode && selectedMeeting) {
+        await updateMeeting(selectedMeeting.id, formData);
+        alert("Reunião atualizada com sucesso!");
+      } else {
+        await createMeeting(formData);
+        alert("Reunião criada com sucesso!");
+      }
+      
+      await loadMeetings();
+      resetForm();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro ao salvar reunião";
+      alert(`Erro: ${errorMessage}`);
+      console.error("Erro ao salvar reunião:", err);
+    } finally {
+      setSubmitting(false);
     }
-
-    resetForm();
   };
 
   const handleEdit = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
-    setFormData(meeting);
+    setFormData({
+      title: meeting.title,
+      date: meeting.date,
+      time: meeting.time,
+      endTime: meeting.endTime || "",
+      location: meeting.location,
+      participants: meeting.participants,
+      description: meeting.description,
+    });
     setEditMode(true);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir esta reunião?")) {
-      setMeetings(meetings.filter((m) => m.id !== id));
+  const handleDelete = async (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir esta reunião?")) {
+      return;
+    }
+
+    try {
+      await deleteMeeting(id);
       alert("Reunião excluída com sucesso!");
+      await loadMeetings();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro ao excluir reunião";
+      alert(`Erro: ${errorMessage}`);
+      console.error("Erro ao excluir reunião:", err);
     }
   };
 
@@ -83,10 +135,56 @@ export function HomeADMIN() {
     setExpandedMeetings(newExpanded);
   };
 
+  // Estado de Loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <HeaderAdmin />
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="bg-white rounded-xl shadow-lg p-12">
+            <div className="flex flex-col items-center justify-center">
+              <Loader2 size={64} className="text-purple-500 animate-spin mb-4" />
+              <p className="text-gray-600 text-xl font-medium">Carregando painel administrativo...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Estado de Erro
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <HeaderAdmin />
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle size={24} className="text-red-500 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-red-800 font-semibold text-lg mb-2">
+                    Erro ao carregar dados
+                  </h3>
+                  <p className="text-red-700 mb-4">{error}</p>
+                  <button
+                    onClick={loadMeetings}
+                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+                  >
+                    Tentar Novamente
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
-      {/* Header Admin */}
-      <HeaderAdmin/>
+      <HeaderAdmin />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Estatísticas */}
@@ -119,12 +217,12 @@ export function HomeADMIN() {
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-600">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">Setores Ativos</p>
+                <p className="text-gray-600 text-sm font-semibold">Locais Únicos</p>
                 <p className="text-3xl font-bold text-green-600">
-                  {new Set(meetings.map(m => m.description).filter(Boolean)).size}
+                  {new Set(meetings.map(m => m.location).filter(Boolean)).size}
                 </p>
               </div>
-              <Users size={48} className="text-green-300" />
+              <MapPin size={48} className="text-green-300" />
             </div>
           </div>
         </div>
@@ -153,13 +251,15 @@ export function HomeADMIN() {
               <button
                 onClick={resetForm}
                 className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
+                disabled={submitting}
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
+            <div className="space-y-6">
+              {/* Título */}
+              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Título da Reunião *
                 </label>
@@ -169,33 +269,53 @@ export function HomeADMIN() {
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
                   placeholder="Ex: Reunião de Planejamento Estratégico"
+                  disabled={submitting}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Data *
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                />
+              {/* Data e Horários em Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Data *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Horário de Início *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.time}
+                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Horário de Término *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                    disabled={submitting}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Horário *
-                </label>
-                <input
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-
+              {/* Local */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Local *
@@ -206,23 +326,12 @@ export function HomeADMIN() {
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
                   placeholder="Ex: Sala de Reuniões - SIHS"
+                  disabled={submitting}
                 />
               </div>
 
+              {/* Participantes */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Setor Responsável
-                </label>
-                <input
-                  type="text"
-                  value={formData.description || ""}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                  placeholder="Ex: Administração"
-                />
-              </div>
-
-              <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Participantes *
                 </label>
@@ -231,11 +340,16 @@ export function HomeADMIN() {
                   value={formData.participants}
                   onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                  placeholder="Ex: Equipe de TI, Diretoria, Gestores"
+                  placeholder="Ex: 10 participantes"
+                  disabled={submitting}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Formato sugerido: "10" apenas o número
+                </p>
               </div>
 
-              <div className="md:col-span-2">
+              {/* Descrição */}
+              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Descrição
                 </label>
@@ -245,6 +359,7 @@ export function HomeADMIN() {
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
                   rows={4}
                   placeholder="Descrição detalhada da reunião..."
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -252,13 +367,22 @@ export function HomeADMIN() {
             <div className="flex gap-4 mt-6">
               <button
                 onClick={handleSubmit}
-                className="flex-1 bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all"
+                disabled={submitting}
+                className="flex-1 bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {editMode ? "Salvar Alterações" : "Criar Reunião"}
+                {submitting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editMode ? "Salvar Alterações" : "Criar Reunião"
+                )}
               </button>
               <button
                 onClick={resetForm}
-                className="px-8 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-lg transition-colors"
+                disabled={submitting}
+                className="px-8 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancelar
               </button>
@@ -268,10 +392,21 @@ export function HomeADMIN() {
 
         {/* Lista de Reuniões */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Calendar size={28} className="text-purple-600" />
-            Todas as Reuniões
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Calendar size={28} className="text-purple-600" />
+              Todas as Reuniões
+            </h2>
+            <button
+              onClick={loadMeetings}
+              className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Atualizar
+            </button>
+          </div>
 
           {meetings.length === 0 ? (
             <div className="bg-white rounded-xl shadow-lg p-12 text-center">
@@ -296,6 +431,7 @@ export function HomeADMIN() {
                         <div className="flex items-center gap-2">
                           <Clock size={16} className="text-purple-600" />
                           {meeting.time}
+                          {meeting.endTime && ` - ${meeting.endTime}`}
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin size={16} className="text-purple-600" />
@@ -344,22 +480,6 @@ export function HomeADMIN() {
                             <p className="text-sm font-semibold text-gray-700">Descrição:</p>
                             <p className="text-gray-600">{meeting.description}</p>
                           </div>
-                        </div>
-                      )}
-                      {meeting.description && (
-                        <div className="flex items-center gap-2">
-                          <Shield size={18} className="text-purple-600" />
-                          <p className="text-sm">
-                            <span className="font-semibold text-gray-700">Setor:</span> {meeting.description}
-                          </p>
-                        </div>
-                      )}
-                      {meeting && (
-                        <div className="flex items-center gap-2">
-                          <Users size={18} className="text-purple-600" />
-                          <p className="text-sm">
-                            <span className="font-semibold text-gray-700">Criado por:</span> Criador...
-                          </p>
                         </div>
                       )}
                     </div>

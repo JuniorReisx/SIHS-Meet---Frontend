@@ -9,64 +9,42 @@ import type { Meeting } from "../../types/types";
 
 export function Home() {
   const [reunioes, setReunioes] = useState<Meeting[]>(database);
-  const [modoEdicao, setModoEdicao] = useState(false);
-  const [reuniaoSelecionada, setReuniaoSelecionada] = useState<Meeting | null>(
-    null
-  );
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-
+  const [showForm, setShowForm] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
+  
   const [formData, setFormData] = useState<Omit<Meeting, "id">>({
     title: "",
     date: "",
     time: "",
+    endTime: "",
     location: "",
     participants: "",
     description: "",
   });
 
-  const resetForm = () => {
+  const loadMeetings = async () => {
+    // Se você tiver uma API, carregue os dados aqui
+    // Por enquanto, mantém o estado atual
+    setReunioes([...reunioes]);
+  };
+
+  const handleSuccess = async () => {
+    // Recarregar lista de reuniões
+    await loadMeetings();
+    
+    // Resetar formulário
     setFormData({
       title: "",
       date: "",
       time: "",
+      endTime: "",
       location: "",
       participants: "",
       description: "",
     });
-    setModoEdicao(false);
-    setReuniaoSelecionada(null);
-    setMostrarFormulario(false);
-  };
-
-  const handleSubmit = () => {
-    if (
-      !formData.title ||
-      !formData.date ||
-      !formData.time ||
-      !formData.location ||
-      !formData.participants
-    ) {
-      alert("Por favor, preencha todos os campos obrigatórios");
-      return;
-    }
-
-    if (modoEdicao && reuniaoSelecionada) {
-      setReunioes(
-        reunioes.map((r) =>
-          r.id === reuniaoSelecionada.id
-            ? { ...formData, id: reuniaoSelecionada.id }
-            : r
-        )
-      );
-    } else {
-      const novaReuniao: Meeting = {
-        ...formData,
-        id: Math.max(0, ...reunioes.map((r) => r.id)) + 1,
-      };
-      setReunioes([...reunioes, novaReuniao]);
-    }
-
-    resetForm();
+    
+    setShowForm(false);
+    setEditingMeeting(null);
   };
 
   return (
@@ -74,10 +52,10 @@ export function Home() {
       <HeaderUser />
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Botão Adicionar */}
-        {!mostrarFormulario && (
+        {!showForm && (
           <div className="mb-8">
             <button
-              onClick={() => setMostrarFormulario(true)}
+              onClick={() => setShowForm(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md flex items-center gap-2 transition-colors"
             >
               <Plus size={20} />
@@ -87,18 +65,22 @@ export function Home() {
         )}
 
         {/* Formulário */}
-        {mostrarFormulario && (
+        {showForm && (
           <MeetingForm
             formData={formData}
-            modoEdicao={modoEdicao}
+            modoEdicao={!!editingMeeting}
+            meetingId={editingMeeting?.id}
             onFormChange={setFormData}
-            onSubmit={handleSubmit}
-            onCancel={resetForm}
+            onSuccess={handleSuccess}
+            onCancel={() => {
+              setShowForm(false);
+              setEditingMeeting(null);
+            }}
           />
         )}
 
         {/* Lista de Reuniões */}
-        <ScheduledMeetings reunioes={reunioes} />
+        <ScheduledMeetings />
       </div>
       <FooterUser />
     </div>
