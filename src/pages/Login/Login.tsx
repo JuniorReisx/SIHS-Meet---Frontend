@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "https://sihs-meeting-backend.onrender.com/api";
+const API_URL = "http://localhost:3000/api";
 
 // Interface para tipar a resposta da API
 interface LoginResponse {
@@ -54,33 +54,76 @@ export default function Login() {
     setError("");
 
     try {
-      // Determina o endpoint baseado no tipo de login
-      const endpoint = tipoLogin === "admin" 
-        ? `${API_URL}/admin/login` 
-        : `${API_URL}/users/login`; 
+      if (tipoLogin === "admin") {
+        // Admin só tem uma rota
+        const endpoint = `${API_URL}/admin/login`;
+        
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: usuario,
+            password: password,
+          }),
+        });
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: usuario,
-          password: password,
-        }),
-      });
+        const data = await response.json();
 
-      const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Usuário ou senha incorretos!");
+        }
 
-      if (!response.ok) {
-        throw new Error(data.message || "Usuário ou senha incorretos!");
+        // Salva os dados da resposta para usar no modal
+        setLoginData(data as LoginResponse);
+        
+        // Abre o modal de confirmação
+        handleOpen();
+      } else {
+        // Usuário: tenta primeira rota
+        let endpoint = `${API_URL}/users/login`;
+        
+        let response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: usuario,
+            password: password,
+          }),
+        });
+
+        let data = await response.json();
+
+        // Se a primeira rota falhar, tenta a rota LDAP
+        if (!response.ok) {
+          endpoint = `${API_URL}/ldap/login`;
+          
+          response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: usuario,
+              password: password,
+            }),
+          });
+
+          data = await response.json();
+
+          // Se a segunda rota também falhar, mostra erro
+          if (!response.ok) {
+            throw new Error(data.message || "Usuário ou senha incorretos!");
+          }
+        }
+
+        // Se uma das rotas funcionou, salva os dados e abre o modal
+        setLoginData(data as LoginResponse);
+        handleOpen();
       }
-
-      // Salva os dados da resposta para usar no modal
-      setLoginData(data as LoginResponse);
-      
-      // Abre o modal de confirmação
-      handleOpen();
     } catch (err) {
       const errorMessage = err instanceof Error 
         ? err.message 

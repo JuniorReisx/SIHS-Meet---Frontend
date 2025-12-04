@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Meeting } from "../types/types";
 
-const API_BASE_URL = "https://sihs-meeting-backend.onrender.com/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 // Detecta automaticamente o ambiente
 const API_URL = API_BASE_URL;
@@ -141,7 +141,7 @@ export const createMeeting = async (meeting: Omit<Meeting, "id">): Promise<Meeti
  * Listar todas as reuniões
  */
 export const getAllMeetings = async (): Promise<Meeting[]> => {
-  const response = await fetch(`${API_URL}/meetings`, {
+  const response = await fetch(`${API_URL}/meetingsConfirmed/all`, {
     method: "GET",
     headers: getHeaders(),
   });
