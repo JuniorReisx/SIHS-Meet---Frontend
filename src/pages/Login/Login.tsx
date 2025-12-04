@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = "https://sihs-meeting-backend.onrender.com/api";
 
 // Interface para tipar a resposta da API
 interface LoginResponse {
