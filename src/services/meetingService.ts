@@ -162,6 +162,25 @@ export const getAllMeetings = async (): Promise<Meeting[]> => {
   return meetingsArray.map(convertToMeeting);
 };
 
+export const getAllMeetingsPendings = async (): Promise<Meeting[]> => {
+  const response = await fetch(`${API_URL}/meetingsPending/all`, {
+    method: "GET",
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao buscar reuniões");
+  }
+
+  const data = await response.json();
+  
+  // Verifica se a resposta é um array ou objeto com propriedade de array
+  const meetingsArray = Array.isArray(data) ? data : (data.meetings || data.data || []);
+  
+  return meetingsArray.map(convertToMeeting);
+};
+
 /**
  * Buscar reunião por ID
  */
@@ -337,6 +356,25 @@ export const useMeetings = () => {
     setError(null);
     try {
       const data = await getAllMeetings();
+      setMeetings(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+export const useMeetingsPendings = () => {
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMeetings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getAllMeetingsPendings();
       setMeetings(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";

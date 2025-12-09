@@ -27,3 +27,15 @@ export interface AdminCredentials {
   user: string;
   password: string;
 }
+
+export interface MeetingFormData {
+  title: string;
+  meeting_date: string;
+  start_time: string;
+  end_time?: string;
+  location: string;
+  participants_count: number;
+  description: string;
+  responsible: string;
+  responsible_department: string;
+};
