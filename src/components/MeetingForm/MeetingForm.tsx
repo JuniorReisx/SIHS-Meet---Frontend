@@ -6,9 +6,9 @@ import type { Meeting } from "../../types/types";
 interface MeetingFormProps {
   formData: Omit<Meeting, "id">;
   modoEdicao: boolean;
-  meetingId?: number; // ID da reunião quando em modo de edição
+  meetingId?: number; 
   onFormChange: (data: Omit<Meeting, "id">) => void;
-  onSuccess: () => void; // Callback quando salvar com sucesso
+  onSuccess: () => void;
   onCancel: () => void;
 }
 
@@ -25,7 +25,9 @@ export function MeetingForm({
 
   const handleSubmit = async () => {
     // Validação dos campos obrigatórios
-    if (!formData.title || !formData.date || !formData.time || !formData.endTime || !formData.location || !formData.participants) {
+    if (!formData.title || !formData.meeting_date || !formData.start_time || 
+        !formData.end_time || !formData.location || !formData.participants_count ||
+        !formData.responsible || !formData.responsible_department) {
       setError("Por favor, preencha todos os campos obrigatórios (*)");
       return;
     }
@@ -35,16 +37,11 @@ export function MeetingForm({
 
     try {
       if (modoEdicao && meetingId) {
-        // Atualizar reunião existente
         await updateMeeting(meetingId, formData);
-        alert("✅ Reunião atualizada com sucesso!");
       } else {
-        // Criar nova reunião
         await createMeeting(formData);
-        alert("✅ Reunião cadastrada com sucesso!");
       }
       
-      // Chama o callback de sucesso (para recarregar a lista, limpar form, etc)
       onSuccess();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro ao salvar reunião";
@@ -96,13 +93,13 @@ export function MeetingForm({
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Data *
+              Data da Reunião *
             </label>
             <input
               type="date"
-              value={formData.date}
+              value={formData.meeting_date}
               onChange={(e) =>
-                onFormChange({ ...formData, date: e.target.value })
+                onFormChange({ ...formData, meeting_date: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
               disabled={submitting}
@@ -115,9 +112,9 @@ export function MeetingForm({
             </label>
             <input
               type="time"
-              value={formData.time}
+              value={formData.start_time}
               onChange={(e) =>
-                onFormChange({ ...formData, time: e.target.value })
+                onFormChange({ ...formData, start_time: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
               disabled={submitting}
@@ -130,9 +127,9 @@ export function MeetingForm({
             </label>
             <input
               type="time"
-              value={formData.endTime || ""}
+              value={formData.end_time || ""}
               onChange={(e) =>
-                onFormChange({ ...formData, endTime: e.target.value })
+                onFormChange({ ...formData, end_time: e.target.value })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
               disabled={submitting}
@@ -166,15 +163,47 @@ export function MeetingForm({
             <input
               type="number"
               min="1"
-              value={formData.participants}
+              value={formData.participants_count}
               onChange={(e) =>
                 onFormChange({
                   ...formData,
-                  participants: e.target.value,
+                  participants_count: parseInt(e.target.value) || 0,
                 })
               }
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
               placeholder="Ex: 10"
+              disabled={submitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Responsável *
+            </label>
+            <input
+              type="text"
+              value={formData.responsible}
+              onChange={(e) =>
+                onFormChange({ ...formData, responsible: e.target.value })
+              }
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="Ex: João Silva"
+              disabled={submitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Departamento do Responsável *
+            </label>
+            <input
+              type="text"
+              value={formData.responsible_department}
+              onChange={(e) =>
+                onFormChange({ ...formData, responsible_department: e.target.value })
+              }
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="Ex: Recursos Humanos"
               disabled={submitting}
             />
           </div>
@@ -184,12 +213,12 @@ export function MeetingForm({
               Descrição/Pauta
             </label>
             <textarea
-              value={formData.description}
+              value={formData.description || ""}
               onChange={(e) =>
                 onFormChange({ ...formData, description: e.target.value })
               }
               rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none transition-colors"
               placeholder="Descreva a pauta e objetivos da reunião..."
               disabled={submitting}
             />

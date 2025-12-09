@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Meeting } from "../types/types";
 
-const API_BASE_URL = "https://sihs-meeting-backend.onrender.com/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 // Detecta automaticamente o ambiente
 const API_URL = API_BASE_URL;
@@ -11,12 +11,14 @@ const API_URL = API_BASE_URL;
 // Interface para criar/atualizar reunião (formato da API)
 interface MeetingPayload {
   title: string;
-  meeting_date: string; // YYYY-MM-DD
-  start_time: string; // HH:mm
-  end_time?: string; // HH:mm (opcional)
+  meeting_date: string; // YYYY-MM-DD 
+  start_time: string;
+  end_time: string;
   location: string;
-  participants_count?: number;
+  participants_count: number;
   description?: string;
+  responsible: string;
+  responsible_department: string;
 }
 
 // Interface para a resposta da API
@@ -25,10 +27,12 @@ interface MeetingResponse {
   title: string;
   meeting_date: string;
   start_time: string;
-  end_time?: string;
+  end_time: string;
   location: string;
-  participants_count?: number;
+  participants_count: number;
   description?: string;
+  responsible: string;
+  responsible_department: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -79,12 +83,14 @@ const convertToMeeting = (response: MeetingResponse): Meeting => {
   return {
     id: response.id,
     title: response.title,
-    date: response.meeting_date,
-    time: response.start_time,
-    endTime: response.end_time,
+    meeting_date: response.meeting_date,
+    start_time: response.start_time,
+    end_time: response.end_time,
     location: response.location,
-    participants: `${response.participants_count || 0} participantes`,
+    participants_count: response.participants_count,
     description: response.description || "",
+    responsible: response.responsible,
+    responsible_department: response.responsible_department,
   };
 };
 
@@ -92,19 +98,15 @@ const convertToMeeting = (response: MeetingResponse): Meeting => {
 const convertToPayload = (meeting: Partial<Meeting>): Partial<MeetingPayload> => {
   const payload: Partial<MeetingPayload> = {};
   
-  if (meeting.title) payload.title = meeting.title;
-  if (meeting.date) payload.meeting_date = meeting.date;
-  if (meeting.time) payload.start_time = meeting.time;
-  if (meeting.endTime) payload.end_time = meeting.endTime;
-  if (meeting.location) payload.location = meeting.location;
-  if (meeting.description) payload.description = meeting.description;
-  
-  // Converter participants (string) para participants_count (number)
-  if (meeting.participants) {
-    // Extrai apenas os números da string (ex: "10 participantes" -> 10)
-    const count = parseInt(meeting.participants.replace(/\D/g, '')) || 0;
-    payload.participants_count = count;
-  }
+  if (meeting.title !== undefined) payload.title = meeting.title;
+  if (meeting.meeting_date !== undefined) payload.meeting_date = meeting.meeting_date;
+  if (meeting.start_time !== undefined) payload.start_time = meeting.start_time;
+  if (meeting.end_time !== undefined) payload.end_time = meeting.end_time;
+  if (meeting.location !== undefined) payload.location = meeting.location;
+  if (meeting.participants_count !== undefined) payload.participants_count = meeting.participants_count;
+  if (meeting.description !== undefined) payload.description = meeting.description;
+  if (meeting.responsible !== undefined) payload.responsible = meeting.responsible;
+  if (meeting.responsible_department !== undefined) payload.responsible_department = meeting.responsible_department;
   
   return payload;
 };
@@ -118,11 +120,12 @@ export const createMeeting = async (meeting: Omit<Meeting, "id">): Promise<Meeti
   const payload = convertToPayload(meeting);
   
   // Validação dos campos obrigatórios
-  if (!payload.title || !payload.meeting_date || !payload.start_time || !payload.end_time || !payload.location) {
-    throw new Error("Campos obrigatórios: title, meeting_date, start_time, end_time, location, participants_count");
+  if (!payload.title || !payload.meeting_date || !payload.start_time || !payload.end_time || 
+      !payload.location || !payload.participants_count || !payload.responsible || !payload.responsible_department) {
+    throw new Error("Campos obrigatórios: title, meeting_date, start_time, end_time, location, participants_count, responsible, responsible_department");
   }
   
-  const response = await fetch(`${API_URL}/meetings`, {
+  const response = await fetch(`${API_URL}/meetingsPending`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(payload),

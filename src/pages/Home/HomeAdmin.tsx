@@ -22,12 +22,14 @@ export function HomeADMIN() {
 
   const [formData, setFormData] = useState<Omit<Meeting, "id">>({
     title: "",
-    date: "",
-    time: "",
-    endTime: "",
+    meeting_date: "",
+    start_time: "",
+    end_time: "",
     location: "",
-    participants: "",
+    participants_count: 0,
     description: "",
+    responsible: "",
+    responsible_department: "",
   });
 
   // Carregar reuniões ao montar o componente
@@ -53,12 +55,14 @@ export function HomeADMIN() {
   const resetForm = () => {
     setFormData({
       title: "",
-      date: "",
-      time: "",
-      endTime: "",
+      meeting_date: "",
+      start_time: "",
+      end_time: "",
       location: "",
-      participants: "",
+      participants_count: 0,
       description: "",
+      responsible: "",
+      responsible_department: "",
     });
     
     setEditMode(false);
@@ -67,7 +71,9 @@ export function HomeADMIN() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.title || !formData.date || !formData.time || !formData.endTime || !formData.location || !formData.participants) {
+    if (!formData.title || !formData.meeting_date || !formData.start_time || !formData.end_time || 
+        !formData.location || !formData.participants_count || !formData.responsible || 
+        !formData.responsible_department) {
       alert("Por favor, preencha todos os campos obrigatórios");
       return;
     }
@@ -76,10 +82,8 @@ export function HomeADMIN() {
     try {
       if (editMode && selectedMeeting) {
         await updateMeeting(selectedMeeting.id, formData);
-        alert("Reunião atualizada com sucesso!");
       } else {
         await createMeeting(formData);
-        alert("Reunião criada com sucesso!");
       }
       
       await loadMeetings();
@@ -97,12 +101,14 @@ export function HomeADMIN() {
     setSelectedMeeting(meeting);
     setFormData({
       title: meeting.title,
-      date: meeting.date,
-      time: meeting.time,
-      endTime: meeting.endTime || "",
+      meeting_date: meeting.meeting_date,
+      start_time: meeting.start_time,
+      end_time: meeting.end_time || "",
       location: meeting.location,
-      participants: meeting.participants,
-      description: meeting.description,
+      participants_count: meeting.participants_count,
+      description: meeting.description || "",
+      responsible: meeting.responsible,
+      responsible_department: meeting.responsible_department,
     });
     setEditMode(true);
     setShowForm(true);
@@ -116,7 +122,6 @@ export function HomeADMIN() {
 
     try {
       await deleteMeeting(id);
-      alert("Reunião excluída com sucesso!");
       await loadMeetings();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro ao excluir reunião";
@@ -204,7 +209,7 @@ export function HomeADMIN() {
                 <p className="text-gray-600 text-sm font-semibold">Próximas 7 dias</p>
                 <p className="text-3xl font-bold text-blue-600">
                   {meetings.filter(m => {
-                    const meetingDate = new Date(m.date);
+                    const meetingDate = new Date(m.meeting_date);
                     const today = new Date();
                     const sevenDays = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
                     return meetingDate >= today && meetingDate <= sevenDays;
@@ -281,8 +286,8 @@ export function HomeADMIN() {
                   </label>
                   <input
                     type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    value={formData.meeting_date}
+                    onChange={(e) => setFormData({ ...formData, meeting_date: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
                     disabled={submitting}
                   />
@@ -294,8 +299,8 @@ export function HomeADMIN() {
                   </label>
                   <input
                     type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    value={formData.start_time}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
                     disabled={submitting}
                   />
@@ -307,8 +312,8 @@ export function HomeADMIN() {
                   </label>
                   <input
                     type="time"
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    value={formData.end_time}
+                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
                     disabled={submitting}
                   />
@@ -333,19 +338,48 @@ export function HomeADMIN() {
               {/* Participantes */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Participantes *
+                  Número de Participantes *
                 </label>
                 <input
-                  type="text"
-                  value={formData.participants}
-                  onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
+                  type="number"
+                  min="1"
+                  value={formData.participants_count}
+                  onChange={(e) => setFormData({ ...formData, participants_count: parseInt(e.target.value) || 0 })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
-                  placeholder="Ex: 10 participantes"
+                  placeholder="Ex: 10"
                   disabled={submitting}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Formato sugerido: "10" apenas o número
-                </p>
+              </div>
+
+              {/* Responsável */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Responsável *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.responsible}
+                    onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                    placeholder="Ex: João Silva"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Departamento *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.responsible_department}
+                    onChange={(e) => setFormData({ ...formData, responsible_department: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                    placeholder="Ex: Recursos Humanos"
+                    disabled={submitting}
+                  />
+                </div>
               </div>
 
               {/* Descrição */}
@@ -426,12 +460,12 @@ export function HomeADMIN() {
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <Calendar size={16} className="text-purple-600" />
-                          {new Date(meeting.date + 'T00:00:00').toLocaleDateString('pt-BR')}
+                          {new Date(meeting.meeting_date + 'T00:00:00').toLocaleDateString('pt-BR')}
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock size={16} className="text-purple-600" />
-                          {meeting.time}
-                          {meeting.endTime && ` - ${meeting.endTime}`}
+                          {meeting.start_time}
+                          {meeting.end_time && ` - ${meeting.end_time}`}
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin size={16} className="text-purple-600" />
@@ -470,7 +504,14 @@ export function HomeADMIN() {
                         <Users size={18} className="text-purple-600 mt-1 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-semibold text-gray-700">Participantes:</p>
-                          <p className="text-gray-600">{meeting.participants}</p>
+                          <p className="text-gray-600">{meeting.participants_count}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Shield size={18} className="text-purple-600 mt-1 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">Responsável:</p>
+                          <p className="text-gray-600">{meeting.responsible} - {meeting.responsible_department}</p>
                         </div>
                       </div>
                       {meeting.description && (

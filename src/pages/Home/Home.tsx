@@ -4,22 +4,23 @@ import { ScheduledMeetings } from "../../components/ScheduledMeetings/ScheduledM
 import { MeetingForm } from "../../components/MeetingForm/MeetingForm";
 import { HeaderUser } from "../../components/Header/HeaderUser";
 import { FooterUser } from "../../components/Footer/FooterUser";
-import { database } from "../../data/data";
 import type { Meeting } from "../../types/types";
 
 export function Home() {
-  const [reunioes, setReunioes] = useState<Meeting[]>(database);
+  const [reunioes, setReunioes] = useState<Meeting[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   
   const [formData, setFormData] = useState<Omit<Meeting, "id">>({
     title: "",
-    date: "",
-    time: "",
-    endTime: "",
+    meeting_date: "",
+    start_time: "",
+    end_time: "",
     location: "",
-    participants: "",
+    participants_count: 0,
     description: "",
+    responsible: "",
+    responsible_department: "",
   });
 
   const loadMeetings = async () => {
@@ -35,12 +36,14 @@ export function Home() {
     // Resetar formulário
     setFormData({
       title: "",
-      date: "",
-      time: "",
-      endTime: "",
+      meeting_date: "",
+      start_time: "",
+      end_time: "",
       location: "",
-      participants: "",
+      participants_count: 0,
       description: "",
+      responsible: "",
+      responsible_department: "",
     });
     
     setShowForm(false);

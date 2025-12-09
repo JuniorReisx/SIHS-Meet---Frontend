@@ -45,7 +45,7 @@ export function ScheduledMeetings() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Reuniões Agendadas
+              Reuniões Confirmadas
             </h2>
             <p className="text-gray-600">Carregando suas reuniões...</p>
           </div>
@@ -73,7 +73,7 @@ export function ScheduledMeetings() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Reuniões Agendadas
+              Reuniões Confirmadas
             </h2>
             <p className="text-gray-600">Gerenciamento de reuniões</p>
           </div>
@@ -111,7 +111,7 @@ export function ScheduledMeetings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            Reuniões Agendadas
+            Reuniões Confirmadas
           </h2>
           <p className="text-gray-600">
             {reunioes.length === 0 
@@ -153,7 +153,7 @@ export function ScheduledMeetings() {
                     {reuniao.title}
                   </h3>
                   <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg text-sm font-semibold">
-                    {getDiaSemana(reuniao.date)}
+                    {getDiaSemana(reuniao.meeting_date)}
                   </div>
                 </div>
               </div>
@@ -170,7 +170,7 @@ export function ScheduledMeetings() {
                       <div>
                         <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide">Data</p>
                         <p className="font-bold text-gray-800 text-lg">
-                          {formatData(reuniao.date)}
+                          {formatData(reuniao.meeting_date)}
                         </p>
                       </div>
                     </div>
@@ -184,8 +184,8 @@ export function ScheduledMeetings() {
                       <div>
                         <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wide">Horário</p>
                         <p className="font-bold text-gray-800 text-lg">
-                          {reuniao.time}
-                          {reuniao.endTime && ` - ${reuniao.endTime}`}
+                          {reuniao.start_time}
+                          {reuniao.end_time && ` - ${reuniao.end_time}`}
                         </p>
                       </div>
                     </div>
@@ -210,7 +210,7 @@ export function ScheduledMeetings() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-green-600 font-semibold uppercase tracking-wide mb-1">Participantes</p>
-                      <p className="font-semibold text-gray-800 line-clamp-2">{reuniao.participants}</p>
+                      <p className="font-semibold text-gray-800 line-clamp-2">{reuniao.participants_count}</p>
                     </div>
                   </div>
                 </div>
