@@ -339,6 +339,7 @@ export const getMeetingsByDateRange = async (
   const data: MeetingResponse[] = await response.json();
   return data.map(convertToMeeting);
 };
+// ... código anterior permanece igual ...
 
 // ==================== HOOK PERSONALIZADO ====================
 
@@ -365,6 +366,66 @@ export const useMeetings = () => {
     }
   };
 
+  const addMeeting = async (meeting: Omit<Meeting, "id">) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const newMeeting = await createMeeting(meeting);
+      setMeetings((prev) => [...prev, newMeeting]);
+      return newMeeting;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeMeeting = async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await deleteMeeting(id);
+      setMeetings((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const editMeeting = async (id: number, meeting: Partial<Meeting>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const updatedMeeting = await updateMeeting(id, meeting);
+      setMeetings((prev) => prev.map((m) => (m.id === id ? updatedMeeting : m)));
+      return updatedMeeting;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ADICIONE ESTE RETURN QUE ESTAVA FALTANDO
+  return {
+    meetings,
+    loading,
+    error,
+    fetchMeetings,
+    addMeeting,
+    removeMeeting,
+    editMeeting,
+  };
+}; // FECHE A FUNÇÃO useMeetings AQUI
+
+// AGORA SIM, DECLARE A PRÓXIMA FUNÇÃO
 export const useMeetingsPendings = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(false);
