@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, Clock, Users, MapPin, AlertCircle, Loader2, RefreshCw, FileText } from "lucide-react";
-import { getAllMeetings } from "../../services/meetingService";
-import type { Meeting } from "../../types/types";
+import { getAllMeetings } from "../../../services/meetingService";
+import type { Meeting } from "../../../types/types";
 
 export function ScheduledMeetings() {
   const [reunioes, setReunioes] = useState<Meeting[]>([]);
@@ -111,7 +111,7 @@ export function ScheduledMeetings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            Reuniões Confirmadas
+            Reuniões Confirmada
           </h2>
           <p className="text-gray-600">
             {reunioes.length === 0 

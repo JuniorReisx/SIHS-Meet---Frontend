@@ -12,8 +12,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:3000/api";
-
+import { API_URL } from "../../config/api";
 // Interface para tipar a resposta da API
 interface LoginResponse {
   token?: string;

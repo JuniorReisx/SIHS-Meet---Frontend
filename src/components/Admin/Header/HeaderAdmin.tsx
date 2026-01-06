@@ -1,16 +1,21 @@
 import logo from "/src/assets/SIHS.jpg";
-import { LogOut } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export function HeaderAdmin() {
   const navigate = useNavigate();
+  // Inicializa o estado diretamente com o valor do localStorage
+  const [username] = useState(() => localStorage.getItem("username") || "");
 
-      const handleLogout = () => {
+  const handleLogout = () => {
     if (confirm("Tem certeza que deseja sair?")) {
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("userRole");
       localStorage.removeItem("username");
       localStorage.removeItem("userSetor");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
       navigate("/login");
     }
   };
@@ -39,13 +44,29 @@ export function HeaderAdmin() {
                 </div>
               </div>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 hover:bg-black/20 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <LogOut size={20} />
-              Sair
-            </button>
+
+            <div className="flex items-center gap-4">
+              {/* Badge com nome do admin */}
+              {username && (
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+                  <div className="bg-white p-2 rounded-full">
+                    <Shield size={16} className="text-purple-600" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-purple-200 font-medium">Administrador</span>
+                    <span className="text-sm font-bold text-white">{username}</span>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 hover:bg-white/10 text-white px-4 py-2 rounded-lg transition-colors border border-white/20 hover:border-white/40"
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Sair</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>

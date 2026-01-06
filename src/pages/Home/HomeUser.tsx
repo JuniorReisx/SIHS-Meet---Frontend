@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { ScheduledMeetings } from "../../components/ScheduledMeetings/ScheduledMeetings";
+import { ScheduledMeetings } from "../../components/User/ScheduledMeetings/ScheduledMeetings";
 import { MeetingForm } from "../../components/MeetingForm/MeetingForm";
-import { HeaderUser } from "../../components/Header/HeaderUser";
-import { FooterUser } from "../../components/Footer/FooterUser";
+import { HeaderUser } from "../../components/User/Header/HeaderUser";
+import { FooterUser } from "../../components/User/Footer/FooterUser";
 import type { Meeting } from "../../types/types";
 
-export function Home() {
+export function HomeUser() {
   const [reunioes, setReunioes] = useState<Meeting[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);

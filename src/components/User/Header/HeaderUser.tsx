@@ -1,9 +1,12 @@
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import logo from "/src/assets/SIHS.jpg";
 
 export function HeaderUser() {
   const navigate = useNavigate();
+  // Inicializa o estado diretamente com o valor do localStorage
+  const [username] = useState(() => localStorage.getItem("username") || "");
 
   const handleLogout = () => {
     if (confirm("Tem certeza que deseja sair?")) {
@@ -11,6 +14,8 @@ export function HeaderUser() {
       localStorage.removeItem("userRole");
       localStorage.removeItem("username");
       localStorage.removeItem("userSetor");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
       navigate("/login");
     }
   };
@@ -37,13 +42,29 @@ export function HeaderUser() {
                 </p>
               </div>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 hover:bg-black/20 text-gray-700 px-4 py-2 rounded-lg transition-colors"
-            >
-              <LogOut size={20} />
-              Sair
-            </button>
+
+            <div className="flex items-center gap-4">
+              {/* Badge com nome do usuário */}
+              {username && (
+                <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                  <div className="bg-blue-600 p-2 rounded-full">
+                    <User size={16} className="text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 font-medium">Usuário</span>
+                    <span className="text-sm font-bold text-gray-800">{username}</span>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 hover:bg-red-50 text-gray-700 hover:text-red-600 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-red-200"
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Sair</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>

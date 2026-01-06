@@ -1,11 +1,11 @@
 import { Calendar, Clock, MapPin } from "lucide-react";
-import type { Meeting } from "../../types/types";
+import type { Meeting } from "../../../../types/types";
 
 interface Props {
   meetings: Meeting[];
 }
 
-export function MeetingStats({ meetings }: Props) {
+export function MeetingDashboard({ meetings }: Props) {
   const upcoming7days = meetings.filter(m => {
     const meetingDate = new Date(m.meeting_date);
     const today = new Date();

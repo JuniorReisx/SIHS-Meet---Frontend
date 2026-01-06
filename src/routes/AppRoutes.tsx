@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Home } from "../pages/Home/Home";
+import { HomeUser } from "../pages/Home/HomeUser";
 import  Login  from "../pages/Login/Login";
 import { HomeADMIN } from "../pages/Home/HomeAdmin";
 
@@ -34,7 +34,7 @@ export function AppRoutes() {
             path="/ScheduledMeetings" 
             element={
               <ProtectedRoute requiredRole="usuario">
-                <Home />
+                <HomeUser />
               </ProtectedRoute>
             } 
           />
