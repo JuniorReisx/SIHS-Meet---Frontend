@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Clock, Plus, X, Save, List, Filter, Calendar, TrendingUp } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Plus, X, Save, List, Filter, TrendingUp } from "lucide-react";
 import { HeaderAdmin } from "../../components/Admin/Header/HeaderAdmin";
 import { PendingMeetingsList } from "../../components/Admin/Meetings/Pending/MeetingsList";
 import { DeniedMeetingsList } from "../../components/Admin/Meetings/Denieds/MeetingsList";
-import { API_URL } from "../../config/api";
 import { ConfirmedMeetingsList } from "../../components/Admin/Meetings/Confirmeds/MeetingList";
+import { TotalMeetingsList } from "../../components/Admin/Meetings/Total/MeetingList";
+import { API_URL } from "../../config/api";
 
 interface Meeting {
   id: number;
@@ -309,56 +310,6 @@ function StatisticsCards({ stats }: { stats: Statistics | null }) {
         <div className="text-2xl font-bold">{stats.past}</div>
         <div className="text-sm opacity-90">Passadas</div>
       </div>
-    </div>
-  );
-}
-
-// Componente para listar todas as reuniões
-function TotalMeetingsList({ meetings }: { meetings: Meeting[] }) {
-  if (meetings.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-8 text-center">
-        <List size={48} className="mx-auto text-gray-300 mb-4" />
-        <p className="text-gray-500 text-lg">Nenhuma reunião encontrada</p>
-      </div>
-    );
-  }
-
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Confirmada</span>;
-      case 'pending':
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">Pendente</span>;
-      case 'denied':
-        return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Negada</span>;
-      default:
-        return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Indefinido</span>;
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {meetings.map((meeting) => (
-        <div key={`${meeting.status}-${meeting.id}`} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="font-bold text-lg text-gray-800 flex-1">{meeting.title}</h3>
-            {getStatusBadge(meeting.status)}
-          </div>
-          
-          <div className="space-y-2 text-sm text-gray-600">
-            <p><strong>Data:</strong> {new Date(meeting.meeting_date).toLocaleDateString('pt-BR')}</p>
-            <p><strong>Horário:</strong> {meeting.start_time} {meeting.end_time && `- ${meeting.end_time}`}</p>
-            <p><strong>Local:</strong> {meeting.location}</p>
-            <p><strong>Participantes:</strong> {meeting.participants_count}</p>
-            <p><strong>Responsável:</strong> {meeting.responsible}</p>
-            <p><strong>Departamento:</strong> {meeting.responsible_department}</p>
-            {meeting.description && (
-              <p className="pt-2 border-t"><strong>Descrição:</strong> {meeting.description}</p>
-            )}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
