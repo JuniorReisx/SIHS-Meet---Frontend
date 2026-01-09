@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { ScheduledMeetings } from "../../components/User/ScheduledMeetings/ScheduledMeetings";
-import { MeetingForm } from "../../components/MeetingForm/MeetingForm";
+import { MeetingForm } from "../../components/User/MeetingForm/MeetingForm";
 import { HeaderUser } from "../../components/User/Header/HeaderUser";
 import { FooterUser } from "../../components/User/Footer/FooterUser";
 import type { Meeting } from "../../types/types";

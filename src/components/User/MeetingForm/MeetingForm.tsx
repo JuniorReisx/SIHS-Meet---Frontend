@@ -1,7 +1,7 @@
 import { Save, X, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { createMeeting, updateMeeting } from "../../services/meetingService";
-import type { Meeting } from "../../types/types";
+import { createMeeting, updateMeeting } from "../../../services/meetingService";
+import type { Meeting } from "../../../types/types";
 
 interface MeetingFormProps {
   formData: Omit<Meeting, "id">;
