@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Clock, Plus, X, Save } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Plus, X, Save, List, Filter, Calendar, TrendingUp } from "lucide-react";
 import { HeaderAdmin } from "../../components/Admin/Header/HeaderAdmin";
 import { PendingMeetingsList } from "../../components/Admin/Meetings/Pending/MeetingsList";
 import { DeniedMeetingsList } from "../../components/Admin/Meetings/Denieds/MeetingsList";
@@ -17,9 +17,20 @@ interface Meeting {
   description: string;
   responsible: string;
   responsible_department: string;
+  status?: 'confirmed' | 'pending' | 'denied';
 }
 
-type TabType = "confirmed" | "pending" | "denied";
+interface Statistics {
+  total: number;
+  confirmed: number;
+  pending: number;
+  denied: number;
+  upcoming: number;
+  past: number;
+}
+
+type TabType = "total" | "confirmed" | "pending" | "denied";
+type FilterType = "all" | "last-10-days" | "last-20-days" | "last-month" | "last-year" | "upcoming" | "past" | "custom" | "month";
 
 // Modal de criação de reunião
 function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
@@ -38,7 +49,6 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
   });
 
   const handleSubmit = async () => {
-    // Validação dos campos obrigatórios
     if (!formData.title || !formData.meeting_date || !formData.start_time || 
         !formData.end_time || !formData.location || !formData.participants_count ||
         !formData.responsible || !formData.responsible_department) {
@@ -269,110 +279,257 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
   );
 }
 
+// Componente de Estatísticas
+function StatisticsCards({ stats }: { stats: Statistics | null }) {
+  if (!stats) return null;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="text-2xl font-bold">{stats.total}</div>
+        <div className="text-sm opacity-90">Total</div>
+      </div>
+      <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="text-2xl font-bold">{stats.confirmed}</div>
+        <div className="text-sm opacity-90">Confirmadas</div>
+      </div>
+      <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="text-2xl font-bold">{stats.pending}</div>
+        <div className="text-sm opacity-90">Pendentes</div>
+      </div>
+      <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="text-2xl font-bold">{stats.denied}</div>
+        <div className="text-sm opacity-90">Negadas</div>
+      </div>
+      <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="text-2xl font-bold">{stats.upcoming}</div>
+        <div className="text-sm opacity-90">Futuras</div>
+      </div>
+      <div className="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="text-2xl font-bold">{stats.past}</div>
+        <div className="text-sm opacity-90">Passadas</div>
+      </div>
+    </div>
+  );
+}
+
+// Componente para listar todas as reuniões
+function TotalMeetingsList({ meetings }: { meetings: Meeting[] }) {
+  if (meetings.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-8 text-center">
+        <List size={48} className="mx-auto text-gray-300 mb-4" />
+        <p className="text-gray-500 text-lg">Nenhuma reunião encontrada</p>
+      </div>
+    );
+  }
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Confirmada</span>;
+      case 'pending':
+        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">Pendente</span>;
+      case 'denied':
+        return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Negada</span>;
+      default:
+        return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Indefinido</span>;
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {meetings.map((meeting) => (
+        <div key={`${meeting.status}-${meeting.id}`} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="font-bold text-lg text-gray-800 flex-1">{meeting.title}</h3>
+            {getStatusBadge(meeting.status)}
+          </div>
+          
+          <div className="space-y-2 text-sm text-gray-600">
+            <p><strong>Data:</strong> {new Date(meeting.meeting_date).toLocaleDateString('pt-BR')}</p>
+            <p><strong>Horário:</strong> {meeting.start_time} {meeting.end_time && `- ${meeting.end_time}`}</p>
+            <p><strong>Local:</strong> {meeting.location}</p>
+            <p><strong>Participantes:</strong> {meeting.participants_count}</p>
+            <p><strong>Responsável:</strong> {meeting.responsible}</p>
+            <p><strong>Departamento:</strong> {meeting.responsible_department}</p>
+            {meeting.description && (
+              <p className="pt-2 border-t"><strong>Descrição:</strong> {meeting.description}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function HomeADMIN() {
   const [confirmedMeetings, setConfirmedMeetings] = useState<Meeting[]>([]);
   const [pendingMeetings, setPendingMeetings] = useState<Meeting[]>([]);
   const [deniedMeetings, setDeniedMeetings] = useState<Meeting[]>([]);
+  const [totalMeetings, setTotalMeetings] = useState<Meeting[]>([]);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>("pending");
+  const [activeTab, setActiveTab] = useState<TabType>("total");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Estados para filtros
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  // Carregar estatísticas
+  const loadStatistics = async () => {
+    try {
+      const response = await fetch(`${API_URL}/meetingsTotal/statistics`);
+      if (response.ok) {
+        const data = await response.json();
+        setStatistics(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar estatísticas:", error);
+    }
+  };
 
   // Carregar reuniões confirmadas
   const loadConfirmedMeetings = async () => {
     try {
-      console.log("Carregando reuniões confirmadas...");
       const response = await fetch(`${API_URL}/meetingsConfirmed/all`);
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      console.log("Dados recebidos (confirmed):", data);
-      console.log("É array?", Array.isArray(data));
-
-      // Trata diferentes formatos de resposta
+      let meetings = [];
       if (Array.isArray(data)) {
-        setConfirmedMeetings(data);
+        meetings = data;
       } else if (data && Array.isArray(data.meetings)) {
-        setConfirmedMeetings(data.meetings);
+        meetings = data.meetings;
       } else if (data && Array.isArray(data.data)) {
-        setConfirmedMeetings(data.data);
-      } else {
-        console.warn("Formato de dados inesperado (confirmed):", data);
-        setConfirmedMeetings([]);
+        meetings = data.data;
       }
+      
+      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'confirmed' as const }));
+      setConfirmedMeetings(meetingsWithStatus);
+      return meetingsWithStatus;
     } catch (error) {
       console.error("Erro ao carregar reuniões confirmadas:", error);
       setConfirmedMeetings([]);
+      return [];
     }
   };
 
   // Carregar reuniões pendentes
   const loadPendingMeetings = async () => {
     try {
-      console.log("Carregando reuniões pendentes...");
       const response = await fetch(`${API_URL}/meetingsPending/all`);
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      console.log("Dados recebidos (pending):", data);
-      console.log("É array?", Array.isArray(data));
-
-      // Trata diferentes formatos de resposta
+      let meetings = [];
       if (Array.isArray(data)) {
-        setPendingMeetings(data);
+        meetings = data;
       } else if (data && Array.isArray(data.meetings)) {
-        setPendingMeetings(data.meetings);
+        meetings = data.meetings;
       } else if (data && Array.isArray(data.data)) {
-        setPendingMeetings(data.data);
-      } else {
-        console.warn("Formato de dados inesperado (pending):", data);
-        setPendingMeetings([]);
+        meetings = data.data;
       }
+      
+      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'pending' as const }));
+      setPendingMeetings(meetingsWithStatus);
+      return meetingsWithStatus;
     } catch (error) {
       console.error("Erro ao carregar reuniões pendentes:", error);
       setPendingMeetings([]);
+      return [];
     }
   };
 
   // Carregar reuniões negadas
   const loadDeniedMeetings = async () => {
     try {
-      console.log("Carregando reuniões negadas...");
       const response = await fetch(`${API_URL}/meetingsDenied/all`);
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      console.log("Dados recebidos (denied):", data);
-      console.log("É array?", Array.isArray(data));
-
-      // Trata diferentes formatos de resposta
+      let meetings = [];
       if (Array.isArray(data)) {
-        setDeniedMeetings(data);
+        meetings = data;
       } else if (data && Array.isArray(data.meetings)) {
-        setDeniedMeetings(data.meetings);
+        meetings = data.meetings;
       } else if (data && Array.isArray(data.data)) {
-        setDeniedMeetings(data.data);
-      } else {
-        console.warn("Formato de dados inesperado (denied):", data);
-        setDeniedMeetings([]);
+        meetings = data.data;
       }
+      
+      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'denied' as const }));
+      setDeniedMeetings(meetingsWithStatus);
+      return meetingsWithStatus;
     } catch (error) {
       console.error("Erro ao carregar reuniões negadas:", error);
       setDeniedMeetings([]);
+      return [];
+    }
+  };
+
+  // Carregar reuniões com filtro
+  const loadTotalMeetingsWithFilter = async (filter: FilterType) => {
+    try {
+      let url = `${API_URL}/meetingsTotal/all`;
+      
+      switch (filter) {
+        case "last-10-days":
+          url = `${API_URL}/meetingsTotal/filter/last-10-days`;
+          break;
+        case "last-20-days":
+          url = `${API_URL}/meetingsTotal/filter/last-20-days`;
+          break;
+        case "last-month":
+          url = `${API_URL}/meetingsTotal/filter/last-month`;
+          break;
+        case "last-year":
+          url = `${API_URL}/meetingsTotal/filter/last-year`;
+          break;
+        case "upcoming":
+          url = `${API_URL}/meetingsTotal/filter/upcoming`;
+          break;
+        case "past":
+          url = `${API_URL}/meetingsTotal/filter/past`;
+          break;
+        case "custom":
+          if (customStartDate && customEndDate) {
+            url = `${API_URL}/meetingsTotal/range/dates?start=${customStartDate}&end=${customEndDate}`;
+          }
+          break;
+        case "month":
+          if (selectedMonth) {
+            url = `${API_URL}/meetingsTotal/month/${selectedMonth}`;
+          }
+          break;
+      }
+
+      // Aplicar filtro de status se selecionado
+      if (selectedStatus !== "all" && filter !== "custom" && filter !== "month") {
+        url = `${API_URL}/meetingsTotal/status/${selectedStatus}`;
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      let meetings = [];
+      
+      if (Array.isArray(data)) {
+        meetings = data;
+      } else if (data && Array.isArray(data.meetings)) {
+        meetings = data.meetings;
+      } else if (data && Array.isArray(data.data)) {
+        meetings = data.data;
+      }
+
+      setTotalMeetings(meetings);
+    } catch (error) {
+      console.error("Erro ao carregar reuniões com filtro:", error);
+      setTotalMeetings([]);
     }
   };
 
@@ -384,6 +541,8 @@ export function HomeADMIN() {
         loadConfirmedMeetings(),
         loadPendingMeetings(),
         loadDeniedMeetings(),
+        loadTotalMeetingsWithFilter(activeFilter),
+        loadStatistics(),
       ]);
     } catch (error) {
       console.error("Erro ao carregar reuniões:", error);
@@ -396,31 +555,35 @@ export function HomeADMIN() {
     loadAllMeetings();
   }, []);
 
-  // Aprovar reunião (remover de pendente)
+  // Atualizar quando filtro mudar
+  useEffect(() => {
+    if (!loading) {
+      loadTotalMeetingsWithFilter(activeFilter);
+    }
+  }, [activeFilter, customStartDate, customEndDate, selectedMonth, selectedStatus]);
+
   const handleApproveMeeting = async (id: number) => {
     setPendingMeetings((prev) => prev.filter((m) => m.id !== id));
-    await loadConfirmedMeetings();
+    await loadAllMeetings();
   };
 
-  // Negar reunião (remover de pendente)
   const handleDenyMeeting = async (id: number) => {
     setPendingMeetings((prev) => prev.filter((m) => m.id !== id));
-    await loadDeniedMeetings();
+    await loadAllMeetings();
   };
 
-  // Restaurar reunião negada (volta como pendente)
   const handleRestoreMeeting = async (id: number) => {
     setDeniedMeetings((prev) => prev.filter((m) => m.id !== id));
-    await loadPendingMeetings();
+    await loadAllMeetings();
   };
 
-  // Excluir reunião negada permanentemente
   const handleDeleteMeeting = async (id: number) => {
     setDeniedMeetings((prev) => prev.filter((m) => m.id !== id));
+    await loadAllMeetings();
   };
 
   const handleCreateSuccess = () => {
-    loadPendingMeetings();
+    loadAllMeetings();
     setActiveTab("pending");
   };
 
@@ -453,9 +616,27 @@ export function HomeADMIN() {
           </button>
         </div>
 
+        {/* Estatísticas */}
+        <StatisticsCards stats={statistics} />
+
         {/* Abas de navegação */}
         <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-md p-1 inline-flex gap-1">
+          <div className="bg-white rounded-lg shadow-md p-1 inline-flex gap-1 flex-wrap">
+            <button
+              onClick={() => setActiveTab("total")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-md font-semibold transition-all ${
+                activeTab === "total"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <List size={20} />
+              Todas
+              <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-white/20">
+                {totalMeetings.length}
+              </span>
+            </button>
+
             <button
               onClick={() => setActiveTab("confirmed")}
               className={`flex items-center gap-2 px-6 py-3 rounded-md font-semibold transition-all ${
@@ -503,7 +684,127 @@ export function HomeADMIN() {
           </div>
         </div>
 
+        {/* Filtros (apenas visível na aba "Todas") */}
+        {activeTab === "total" && (
+          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="text-blue-600" size={24} />
+              <h3 className="text-xl font-bold text-gray-800">Filtros</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Filtros por período */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Período</label>
+                <select
+                  value={activeFilter}
+                  onChange={(e) => setActiveFilter(e.target.value as FilterType)}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">Todas</option>
+                  <option value="last-10-days">Últimos 10 dias</option>
+                  <option value="last-20-days">Últimos 20 dias</option>
+                  <option value="last-month">Último mês</option>
+                  <option value="last-year">Último ano</option>
+                  <option value="upcoming">Futuras</option>
+                  <option value="past">Passadas</option>
+                  <option value="custom">Período customizado</option>
+                  <option value="month">Por mês específico</option>
+                </select>
+              </div>
+
+              {/* Filtro por status */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">Todos</option>
+                  <option value="confirmed">Confirmadas</option>
+                  <option value="pending">Pendentes</option>
+                  <option value="denied">Negadas</option>
+                </select>
+              </div>
+
+              {/* Filtro por mês (aparece apenas se "month" estiver selecionado) */}
+              {activeFilter === "month" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Selecione o Mês</label>
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {/* Filtro customizado (aparece apenas se "custom" estiver selecionado) */}
+              {activeFilter === "custom" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Data Inicial</label>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Data Final</label>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Botão para limpar filtros */}
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={() => {
+                  setActiveFilter("all");
+                  setSelectedStatus("all");
+                  setCustomStartDate("");
+                  setCustomEndDate("");
+                  setSelectedMonth("");
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
+              >
+                Limpar Filtros
+              </button>
+              <button
+                onClick={() => loadTotalMeetingsWithFilter(activeFilter)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <TrendingUp size={18} />
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Conteúdo das abas */}
+        {activeTab === "total" && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <List className="text-blue-600" />
+              Todas as Reuniões
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({totalMeetings.length} {totalMeetings.length === 1 ? 'reunião' : 'reuniões'})
+              </span>
+            </h2>
+            <TotalMeetingsList meetings={totalMeetings} />
+          </div>
+        )}
+
         {activeTab === "pending" && (
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -526,7 +827,7 @@ export function HomeADMIN() {
             </h2>
             <ConfirmedMeetingsList
               meetings={confirmedMeetings}
-              onUpdate={loadConfirmedMeetings}
+              onUpdate={loadAllMeetings}
             />
           </div>
         )}
