@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { HomeUser } from "../pages/Home/HomeUser";
 import  Login  from "../pages/Login/Login";
 import { HomeADMIN } from "../pages/Home/HomeAdmin";
+import { ReportsPage } from "../pages/Home/ReportsPageAdmin";
 
 // Componente de Rota Protegida
 function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode, requiredRole?: string }) {
@@ -45,6 +46,15 @@ export function AppRoutes() {
             element={
               <ProtectedRoute requiredRole="admin">
                 <HomeADMIN />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/admin/reports" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <ReportsPage /> 
               </ProtectedRoute>
             } 
           />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Clock, Plus, X, Save, List, Filter, TrendingUp } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Plus, X, Save, List, Filter, TrendingUp, FileText } from "lucide-react";
+import { Link } from "react-router-dom";
 import { HeaderAdmin } from "../../components/Admin/Header/HeaderAdmin";
 import { PendingMeetingsList } from "../../components/Admin/Meetings/Pending/MeetingsList";
 import { DeniedMeetingsList } from "../../components/Admin/Meetings/Denieds/MeetingsList";
@@ -360,7 +361,7 @@ export function HomeADMIN() {
         meetings = data.data;
       }
       
-      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'confirmed' as const }));
+       const meetingsWithStatus = meetings.map((m: Meeting) => ({ ...m, status: 'confirmed' as const }));
       setConfirmedMeetings(meetingsWithStatus);
       return meetingsWithStatus;
     } catch (error) {
@@ -386,7 +387,7 @@ export function HomeADMIN() {
         meetings = data.data;
       }
       
-      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'pending' as const }));
+      const meetingsWithStatus = meetings.map((m: Meeting) => ({ ...m, status: 'pending' as const }));
       setPendingMeetings(meetingsWithStatus);
       return meetingsWithStatus;
     } catch (error) {
@@ -412,7 +413,7 @@ export function HomeADMIN() {
         meetings = data.data;
       }
       
-      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'denied' as const }));
+      const meetingsWithStatus = meetings.map((m: Meeting) => ({ ...m, status: 'denied' as const }));
       setDeniedMeetings(meetingsWithStatus);
       return meetingsWithStatus;
     } catch (error) {
@@ -558,13 +559,26 @@ export function HomeADMIN() {
           <h1 className="text-3xl font-bold text-gray-800">
             Gestão de Reuniões
           </h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group"
-          >
-            <Plus size={20} className="group-hover:scale-110 transition-transform" />
-            Nova Reunião
-          </button>
+          
+          <div className="flex items-center gap-3">
+            {/* Botão Relatórios */}
+            <Link 
+              to="/admin/reports"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group"
+            >
+              <FileText size={20} className="group-hover:scale-110 transition-transform" />
+              Relatórios
+            </Link>
+
+            {/* Botão Nova Reunião */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group"
+            >
+              <Plus size={20} className="group-hover:scale-110 transition-transform" />
+              Nova Reunião
+            </button>
+          </div>
         </div>
 
         {/* Estatísticas */}

@@ -58,3 +58,11 @@ export interface MeetingFormData {
   responsible: string;
   responsible_department: string;
 }
+
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  status: string;
+  location: string;
+  department: string;
+}

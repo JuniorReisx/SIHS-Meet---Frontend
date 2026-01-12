@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { API_URL } from "../../config/api";
 import type { Meeting, Statistics, FilterType } from "../../types/types";
 
@@ -10,8 +10,8 @@ export function useMeetings() {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Carregar estatísticas
-  const loadStatistics = async () => {
+  // Carregar estatísticas - Memoizada com useCallback
+  const loadStatistics = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/meetingsTotal/statistics`);
       if (response.ok) {
@@ -21,16 +21,16 @@ export function useMeetings() {
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
     }
-  };
+  }, []);
 
-  // Carregar reuniões confirmadas
-  const loadConfirmedMeetings = async () => {
+  // Carregar reuniões confirmadas - Memoizada com useCallback
+  const loadConfirmedMeetings = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/meetingsConfirmed/all`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      let meetings = [];
+      let meetings: Meeting[] = [];
       if (Array.isArray(data)) {
         meetings = data;
       } else if (data && Array.isArray(data.meetings)) {
@@ -39,7 +39,10 @@ export function useMeetings() {
         meetings = data.data;
       }
       
-      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'confirmed' as const }));
+      const meetingsWithStatus: Meeting[] = meetings.map((m: Meeting) => ({ 
+        ...m, 
+        status: 'confirmed' as const 
+      }));
       setConfirmedMeetings(meetingsWithStatus);
       return meetingsWithStatus;
     } catch (error) {
@@ -47,16 +50,16 @@ export function useMeetings() {
       setConfirmedMeetings([]);
       return [];
     }
-  };
+  }, []);
 
-  // Carregar reuniões pendentes
-  const loadPendingMeetings = async () => {
+  // Carregar reuniões pendentes - Memoizada com useCallback
+  const loadPendingMeetings = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/meetingsPending/all`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      let meetings = [];
+      let meetings: Meeting[] = [];
       if (Array.isArray(data)) {
         meetings = data;
       } else if (data && Array.isArray(data.meetings)) {
@@ -65,7 +68,10 @@ export function useMeetings() {
         meetings = data.data;
       }
       
-      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'pending' as const }));
+      const meetingsWithStatus: Meeting[] = meetings.map((m: Meeting) => ({ 
+        ...m, 
+        status: 'pending' as const 
+      }));
       setPendingMeetings(meetingsWithStatus);
       return meetingsWithStatus;
     } catch (error) {
@@ -73,16 +79,16 @@ export function useMeetings() {
       setPendingMeetings([]);
       return [];
     }
-  };
+  }, []);
 
-  // Carregar reuniões negadas
-  const loadDeniedMeetings = async () => {
+  // Carregar reuniões negadas - Memoizada com useCallback
+  const loadDeniedMeetings = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/meetingsDenied/all`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      let meetings = [];
+      let meetings: Meeting[] = [];
       if (Array.isArray(data)) {
         meetings = data;
       } else if (data && Array.isArray(data.meetings)) {
@@ -91,7 +97,10 @@ export function useMeetings() {
         meetings = data.data;
       }
       
-      const meetingsWithStatus = meetings.map(m => ({ ...m, status: 'denied' as const }));
+      const meetingsWithStatus: Meeting[] = meetings.map((m: Meeting) => ({ 
+        ...m, 
+        status: 'denied' as const 
+      }));
       setDeniedMeetings(meetingsWithStatus);
       return meetingsWithStatus;
     } catch (error) {
@@ -99,10 +108,10 @@ export function useMeetings() {
       setDeniedMeetings([]);
       return [];
     }
-  };
+  }, []);
 
-  // Carregar reuniões com filtro
-  const loadTotalMeetingsWithFilter = async (
+  // Carregar reuniões com filtro - Memoizada com useCallback
+  const loadTotalMeetingsWithFilter = useCallback(async (
     filter: FilterType,
     customStartDate?: string,
     customEndDate?: string,
@@ -152,7 +161,7 @@ export function useMeetings() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      let meetings = [];
+      let meetings: Meeting[] = [];
       
       if (Array.isArray(data)) {
         meetings = data;
@@ -167,10 +176,10 @@ export function useMeetings() {
       console.error("Erro ao carregar reuniões com filtro:", error);
       setTotalMeetings([]);
     }
-  };
+  }, []); // Sem dependências pois recebe tudo por parâmetro
 
-  // Carregar todas as reuniões
-  const loadAllMeetings = async () => {
+  // Carregar todas as reuniões - Memoizada com useCallback
+  const loadAllMeetings = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([
@@ -185,11 +194,18 @@ export function useMeetings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    loadConfirmedMeetings,
+    loadPendingMeetings,
+    loadDeniedMeetings,
+    loadTotalMeetingsWithFilter,
+    loadStatistics
+  ]);
 
+  // useEffect corrigido com dependência
   useEffect(() => {
     loadAllMeetings();
-  }, []);
+  }, [loadAllMeetings]);
 
   return {
     confirmedMeetings,
