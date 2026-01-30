@@ -42,97 +42,107 @@ export default function Login() {
   // Dados temporários para o modal de confirmação
   const [loginData, setLoginData] = useState<LoginResponse | null>(null);
 
-  const handleSubmit = async () => {
-    // Validação básica
-    if (!usuario || !password) {
-      setError("Por favor, preencha todos os campos");
-      return;
-    }
+ const handleSubmit = async () => {
+  if (!usuario || !password) {
+    setError("Por favor, preencha todos os campos");
+    return;
+  }
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      if (tipoLogin === "admin") {
-        // Admin só tem uma rota
-        const endpoint = `${API_URL}/admin/login`;
-        
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: usuario,
-            password: password,
-          }),
-        });
+  try {
+    if (tipoLogin === "admin") {
+      const endpoint = `${API_URL}/admin/login`;
+      
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: usuario,
+          password: password,
+        }),
+      });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Usuário ou senha incorretos!");
+      // ✅ Verifica status ANTES de parsear
+      if (!response.ok) {
+        // Tenta pegar a mensagem de erro se houver
+        let errorMessage = "Usuário ou senha incorretos!";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Se não conseguir parsear, usa mensagem padrão
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
         }
-
-        // Salva os dados da resposta para usar no modal
-        setLoginData(data as LoginResponse);
-        
-        // Abre o modal de confirmação
-        handleOpen();
-      } else {
-        // Usuário: tenta primeira rota
-        let endpoint = `${API_URL}/users/login`;
-        
-        let response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: usuario,
-            password: password,
-          }),
-        });
-
-        let data = await response.json();
-
-        // Se a primeira rota falhar, tenta a rota LDAP
-        if (!response.ok) {
-          endpoint = `${API_URL}/ldap/login`;
-          
-          response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              username: usuario,
-              password: password,
-            }),
-          });
-
-          data = await response.json();
-
-          // Se a segunda rota também falhar, mostra erro
-          if (!response.ok) {
-            throw new Error(data.message || "Usuário ou senha incorretos!");
-          }
-        }
-
-        // Se uma das rotas funcionou, salva os dados e abre o modal
-        setLoginData(data as LoginResponse);
-        handleOpen();
+        throw new Error(errorMessage);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : "Erro ao fazer login. Tente novamente.";
-      setError(errorMessage);
-      console.error("Erro no login:", err);
-    } finally {
-      setLoading(false);
+
+      const data = await response.json();
+      setLoginData(data as LoginResponse);
+      handleOpen();
+      
+    } else {
+      // Usuário: tenta primeira rota
+      let endpoint = `${API_URL}/users/login`;
+      
+      let response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: usuario,
+          password: password,
+        }),
+      });
+
+      // ✅ Verifica status ANTES de parsear
+      if (!response.ok) {
+        // Tenta rota LDAP
+        endpoint = `${API_URL}/ldap/login`;
+        
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: usuario,
+            password: password,
+          }),
+        });
+
+        // Se a segunda rota também falhar
+        if (!response.ok) {
+          let errorMessage = "Usuário ou senha incorretos!";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch {
+            errorMessage = `Erro ${response.status}: ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
+        }
+      }
+
+      // Se chegou aqui, uma das rotas funcionou
+      const data = await response.json();
+      setLoginData(data as LoginResponse);
+      handleOpen();
     }
-  };
+  } catch (err) {
+    const errorMessage = err instanceof Error 
+      ? err.message 
+      : "Erro ao fazer login. Tente novamente.";
+    setError(errorMessage);
+    console.error("Erro no login:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleConfirmLogin = () => {
     if (!loginData) return;
