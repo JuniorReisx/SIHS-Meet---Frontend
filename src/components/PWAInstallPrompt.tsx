@@ -1,23 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Workbox } from 'workbox-window';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export default function PWAInstallPrompt() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showReload, setShowReload] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
   useEffect(() => {
-    // Detectar evento de instalação PWA
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallPrompt(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Registrar Service Worker com Workbox
     if ('serviceWorker' in navigator) {
       const wb = new Workbox('/sw.js');
 
@@ -41,13 +44,13 @@ export default function PWAInstallPrompt() {
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
-    deferredPrompt.prompt();
+    await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       console.log('PWA instalado com sucesso');
     }
-    
+
     setDeferredPrompt(null);
     setShowInstallPrompt(false);
   };
@@ -60,7 +63,6 @@ export default function PWAInstallPrompt() {
 
   return (
     <>
-      {/* Prompt de instalação */}
       {showInstallPrompt && (
         <div style={{
           position: 'fixed',
@@ -109,7 +111,6 @@ export default function PWAInstallPrompt() {
         </div>
       )}
 
-      {/* Prompt de atualização */}
       {showReload && (
         <div style={{
           position: 'fixed',
