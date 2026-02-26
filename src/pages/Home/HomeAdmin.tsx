@@ -1,5 +1,15 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Clock, Plus, X, List, Filter, TrendingUp, FileText } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Plus,
+  X,
+  List,
+  Filter,
+  TrendingUp,
+  FileText,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeaderAdmin } from "../../components/Admin/Header/HeaderAdmin";
 import { PendingMeetingsList } from "../../components/Admin/Meetings/Pending/MeetingsList";
@@ -21,7 +31,7 @@ interface Meeting {
   description: string;
   responsible: string;
   responsible_department: string;
-  status?: 'confirmed' | 'pending' | 'denied';
+  status?: "confirmed" | "pending" | "denied";
 }
 
 interface Statistics {
@@ -34,30 +44,52 @@ interface Statistics {
 }
 
 type TabType = "total" | "confirmed" | "pending" | "denied";
-type FilterType = "all" | "last-10-days" | "last-20-days" | "last-month" | "last-year" | "upcoming" | "past" | "custom" | "month";
+type FilterType =
+  | "all"
+  | "last-10-days"
+  | "last-20-days"
+  | "last-month"
+  | "last-year"
+  | "upcoming"
+  | "past"
+  | "custom"
+  | "month";
 
 // ─── Modal de criação ─────────────────────────────────────────────────────────
-function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function CreateMeetingModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    title: '',
-    meeting_date: '',
-    start_time: '',
-    end_time: '',
-    location: '',
+    title: "",
+    meeting_date: "",
+    start_time: "",
+    end_time: "",
+    location: "",
     participants_count: 1,
-    description: '',
-    responsible: '',
-    responsible_department: '',
+    description: "",
+    responsible: "",
+    responsible_department: "",
     equipment: [] as string[],
-    other_equipment: '',
+    other_equipment: "",
   });
 
   const handleSubmit = async () => {
-    if (!formData.title || !formData.meeting_date || !formData.start_time ||
-        !formData.end_time || !formData.location || !formData.participants_count ||
-        !formData.responsible || !formData.responsible_department) {
+    if (
+      !formData.title ||
+      !formData.meeting_date ||
+      !formData.start_time ||
+      !formData.end_time ||
+      !formData.location ||
+      !formData.participants_count ||
+      !formData.responsible ||
+      !formData.responsible_department
+    ) {
       setError("Por favor, preencha todos os campos obrigatórios (*)");
       return;
     }
@@ -67,29 +99,32 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
 
     try {
       const response = await fetch(`${API_URL}/meetingsPending`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) throw new Error('Erro ao criar reunião');
+      if (!response.ok) throw new Error("Erro ao criar reunião");
 
-      alert('Reunião criada com sucesso! Ela está pendente de aprovação.');
+      alert("Reunião criada com sucesso! Ela está pendente de aprovação.");
       onSuccess();
       onClose();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erro ao criar reunião";
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao criar reunião";
       setError(errorMessage);
-      console.error('Erro ao criar reunião:', error);
+      console.error("Erro ao criar reunião:", error);
     } finally {
       setLoading(false);
     }
   };
 
   // ✅ Wrapper que garante que `equipment` nunca seja undefined
-  const handleSetFormData = (data: typeof formData | ((prev: typeof formData) => typeof formData)) => {
+  const handleSetFormData = (
+    data: typeof formData | ((prev: typeof formData) => typeof formData),
+  ) => {
     setFormData((prev) => {
-      const next = typeof data === 'function' ? data(prev) : data;
+      const next = typeof data === "function" ? data(prev) : data;
       return { ...next, equipment: next.equipment ?? [] };
     });
   };
@@ -97,7 +132,6 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-
         {/* Header fixo */}
         <div className="sticky top-0 bg-white border-b-2 border-blue-100 p-6 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-blue-900">Nova Reunião</h2>
@@ -123,9 +157,12 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             <div className="flex items-start gap-3">
               <Clock className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h5 className="text-sm font-semibold text-yellow-900 mb-1">Atenção</h5>
+                <h5 className="text-sm font-semibold text-yellow-900 mb-1">
+                  Atenção
+                </h5>
                 <p className="text-xs text-yellow-800">
-                  Esta reunião será criada como <strong>PENDENTE</strong> e precisará ser aprovada por um administrador.
+                  Esta reunião será criada como <strong>PENDENTE</strong> e
+                  precisará ser aprovada por um administrador.
                 </p>
               </div>
             </div>
@@ -207,8 +244,10 @@ export function HomeADMIN() {
 
   const extractMeetings = (data: unknown): Meeting[] => {
     if (Array.isArray(data)) return data;
-    if (data && Array.isArray((data as { meetings?: Meeting[] }).meetings)) return (data as { meetings: Meeting[] }).meetings;
-    if (data && Array.isArray((data as { data?: Meeting[] }).data)) return (data as { data: Meeting[] }).data;
+    if (data && Array.isArray((data as { meetings?: Meeting[] }).meetings))
+      return (data as { meetings: Meeting[] }).meetings;
+    if (data && Array.isArray((data as { data?: Meeting[] }).data))
+      return (data as { data: Meeting[] }).data;
     return [];
   };
 
@@ -216,38 +255,58 @@ export function HomeADMIN() {
     try {
       const res = await fetch(`${API_URL}/meetingsConfirmed/all`);
       if (!res.ok) throw new Error();
-      const meetings = extractMeetings(await res.json()).map((m) => ({ ...m, status: 'confirmed' as const }));
+      const meetings = extractMeetings(await res.json()).map((m) => ({
+        ...m,
+        status: "confirmed" as const,
+      }));
       setConfirmedMeetings(meetings);
-    } catch { setConfirmedMeetings([]); }
+    } catch {
+      setConfirmedMeetings([]);
+    }
   };
 
   const loadPendingMeetings = async () => {
     try {
       const res = await fetch(`${API_URL}/meetingsPending/all`);
       if (!res.ok) throw new Error();
-      const meetings = extractMeetings(await res.json()).map((m) => ({ ...m, status: 'pending' as const }));
+      const meetings = extractMeetings(await res.json()).map((m) => ({
+        ...m,
+        status: "pending" as const,
+      }));
       setPendingMeetings(meetings);
-    } catch { setPendingMeetings([]); }
+    } catch {
+      setPendingMeetings([]);
+    }
   };
 
   const loadDeniedMeetings = async () => {
     try {
       const res = await fetch(`${API_URL}/meetingsDenied/all`);
       if (!res.ok) throw new Error();
-      const meetings = extractMeetings(await res.json()).map((m) => ({ ...m, status: 'denied' as const }));
+      const meetings = extractMeetings(await res.json()).map((m) => ({
+        ...m,
+        status: "denied" as const,
+      }));
       setDeniedMeetings(meetings);
-    } catch { setDeniedMeetings([]); }
+    } catch {
+      setDeniedMeetings([]);
+    }
   };
 
   const loadTotalMeetingsWithFilter = async (filter: FilterType) => {
     try {
       let url = `${API_URL}/meetingsTotal/all`;
 
-      if (filter === "last-10-days") url = `${API_URL}/meetingsTotal/filter/last-10-days`;
-      else if (filter === "last-20-days") url = `${API_URL}/meetingsTotal/filter/last-20-days`;
-      else if (filter === "last-month") url = `${API_URL}/meetingsTotal/filter/last-month`;
-      else if (filter === "last-year") url = `${API_URL}/meetingsTotal/filter/last-year`;
-      else if (filter === "upcoming") url = `${API_URL}/meetingsTotal/filter/upcoming`;
+      if (filter === "last-10-days")
+        url = `${API_URL}/meetingsTotal/filter/last-10-days`;
+      else if (filter === "last-20-days")
+        url = `${API_URL}/meetingsTotal/filter/last-20-days`;
+      else if (filter === "last-month")
+        url = `${API_URL}/meetingsTotal/filter/last-month`;
+      else if (filter === "last-year")
+        url = `${API_URL}/meetingsTotal/filter/last-year`;
+      else if (filter === "upcoming")
+        url = `${API_URL}/meetingsTotal/filter/upcoming`;
       else if (filter === "past") url = `${API_URL}/meetingsTotal/filter/past`;
       else if (filter === "custom" && customStartDate && customEndDate)
         url = `${API_URL}/meetingsTotal/range/dates?start=${customStartDate}&end=${customEndDate}`;
@@ -260,7 +319,9 @@ export function HomeADMIN() {
       const res = await fetch(url);
       if (!res.ok) throw new Error();
       setTotalMeetings(extractMeetings(await res.json()));
-    } catch { setTotalMeetings([]); }
+    } catch {
+      setTotalMeetings([]);
+    }
   };
 
   const loadAllMeetings = async () => {
@@ -278,12 +339,20 @@ export function HomeADMIN() {
     }
   };
 
-  useEffect(() => { loadAllMeetings(); }, []);
+  useEffect(() => {
+    loadAllMeetings();
+  }, []);
 
   useEffect(() => {
     if (!loading) loadTotalMeetingsWithFilter(activeFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter, customStartDate, customEndDate, selectedMonth, selectedStatus]);
+  }, [
+    activeFilter,
+    customStartDate,
+    customEndDate,
+    selectedMonth,
+    selectedStatus,
+  ]);
 
   const handleApproveMeeting = async (id: number) => {
     setPendingMeetings((prev) => prev.filter((m) => m.id !== id));
@@ -325,30 +394,37 @@ export function HomeADMIN() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       <HeaderAdmin />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Gestão de Reuniões</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+            Gestão de Reuniões
+          </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/admin/reports"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group"
+              className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group text-sm sm:text-base"
             >
-              <FileText size={20} className="group-hover:scale-110 transition-transform" />
-              Relatórios
+              <FileText
+                size={18}
+                className="group-hover:scale-110 transition-transform flex-shrink-0"
+              />
+              <span className="hidden xs:inline sm:inline">Relatórios</span>
             </Link>
 
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group"
+              className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group text-sm sm:text-base"
             >
-              <Plus size={20} className="group-hover:scale-110 transition-transform" />
-              Nova Reunião
+              <Plus
+                size={18}
+                className="group-hover:scale-110 transition-transform flex-shrink-0"
+              />
+              <span>Nova Reunião</span>
             </button>
           </div>
         </div>
-
         {/* Estatísticas */}
         <StatisticsCards stats={statistics} />
 
@@ -356,21 +432,49 @@ export function HomeADMIN() {
         <div className="mb-6">
           <div className="bg-white rounded-lg shadow-md p-1 inline-flex gap-1 flex-wrap">
             {[
-              { key: "total", label: "Todas", icon: <List size={20} />, color: "bg-blue-600", count: totalMeetings.length },
-              { key: "confirmed", label: "Confirmadas", icon: <CheckCircle size={20} />, color: "bg-green-500", count: confirmedMeetings.length },
-              { key: "pending", label: "Pendentes", icon: <Clock size={20} />, color: "bg-yellow-500", count: pendingMeetings.length },
-              { key: "denied", label: "Negadas", icon: <XCircle size={20} />, color: "bg-red-500", count: deniedMeetings.length },
+              {
+                key: "total",
+                label: "Todas",
+                icon: <List size={20} />,
+                color: "bg-blue-600",
+                count: totalMeetings.length,
+              },
+              {
+                key: "confirmed",
+                label: "Confirmadas",
+                icon: <CheckCircle size={20} />,
+                color: "bg-green-500",
+                count: confirmedMeetings.length,
+              },
+              {
+                key: "pending",
+                label: "Pendentes",
+                icon: <Clock size={20} />,
+                color: "bg-yellow-500",
+                count: pendingMeetings.length,
+              },
+              {
+                key: "denied",
+                label: "Negadas",
+                icon: <XCircle size={20} />,
+                color: "bg-red-500",
+                count: deniedMeetings.length,
+              },
             ].map(({ key, label, icon, color, count }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key as TabType)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-md font-semibold transition-all ${
-                  activeTab === key ? `${color} text-white shadow-md` : "text-gray-600 hover:bg-gray-100"
+                  activeTab === key
+                    ? `${color} text-white shadow-md`
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 {icon}
                 {label}
-                <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-white/20">{count}</span>
+                <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-white/20">
+                  {count}
+                </span>
               </button>
             ))}
           </div>
@@ -386,10 +490,14 @@ export function HomeADMIN() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Período</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Período
+                </label>
                 <select
                   value={activeFilter}
-                  onChange={(e) => setActiveFilter(e.target.value as FilterType)}
+                  onChange={(e) =>
+                    setActiveFilter(e.target.value as FilterType)
+                  }
                   className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
                 >
                   <option value="all">Todas</option>
@@ -405,7 +513,9 @@ export function HomeADMIN() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Status
+                </label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
@@ -420,7 +530,9 @@ export function HomeADMIN() {
 
               {activeFilter === "month" && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Selecione o Mês</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Selecione o Mês
+                  </label>
                   <input
                     type="month"
                     value={selectedMonth}
@@ -433,7 +545,9 @@ export function HomeADMIN() {
               {activeFilter === "custom" && (
                 <>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Data Inicial</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data Inicial
+                    </label>
                     <input
                       type="date"
                       value={customStartDate}
@@ -442,7 +556,9 @@ export function HomeADMIN() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Data Final</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data Final
+                    </label>
                     <input
                       type="date"
                       value={customEndDate}
@@ -485,7 +601,8 @@ export function HomeADMIN() {
               <List className="text-blue-600" />
               Todas as Reuniões
               <span className="text-sm font-normal text-gray-500 ml-2">
-                ({totalMeetings.length} {totalMeetings.length === 1 ? 'reunião' : 'reuniões'})
+                ({totalMeetings.length}{" "}
+                {totalMeetings.length === 1 ? "reunião" : "reuniões"})
               </span>
             </h2>
             <TotalMeetingsList meetings={totalMeetings} />
