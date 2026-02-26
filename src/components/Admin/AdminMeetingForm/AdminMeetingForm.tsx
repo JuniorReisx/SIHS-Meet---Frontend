@@ -59,8 +59,8 @@ function RoomBadge({
   );
 }
 
-// ─── Props (adapte ao tipo real do seu projeto) ───────────────────────────────
-interface AdminFormData {
+// ─── Props ────────────────────────────────────────────────────────────────────
+export interface AdminFormData {
   title: string;
   meeting_date: string;
   start_time: string;
@@ -70,8 +70,8 @@ interface AdminFormData {
   responsible: string;
   responsible_department: string;
   description: string;
-  equipment?: string[];
-  other_equipment?: string;
+  equipment: string[];       // ✅ obrigatório, não opcional
+  other_equipment: string;   // ✅ obrigatório, não opcional
 }
 
 interface AdminMeetingFormProps {
@@ -90,18 +90,15 @@ export function AdminMeetingForm({
   onClose,
   handleSubmit,
 }: AdminMeetingFormProps) {
-  // ── Room config derived ────────────────────────────────────────────────────
   const roomConfig = formData.location ? ROOM_CONFIG[formData.location] : null;
   const maxCapacity = roomConfig?.capacity ?? null;
 
-  // ── Capacity warning — computed directly, no effect needed ─────────────────
   const capacityWarning =
     maxCapacity !== null && formData.participants_count > maxCapacity
       ? `A sala "${formData.location}" comporta no máximo ${maxCapacity} participantes. Reduza o número ou escolha outra sala.`
       : null;
 
-  // ── Equipment toggle ───────────────────────────────────────────────────────
-  const selectedEquipment: string[] = formData.equipment ?? [];
+  const selectedEquipment: string[] = formData.equipment;
 
   const toggleEquipment = (id: string) => {
     const next = selectedEquipment.includes(id)
@@ -110,22 +107,16 @@ export function AdminMeetingForm({
     setFormData({ ...formData, equipment: next });
   };
 
-  // ── Intercept submit to enforce capacity rule ──────────────────────────────
   const onSubmit = () => {
-    if (maxCapacity !== null && formData.participants_count > maxCapacity) {
-      return; // blocked — button should already be disabled, but guard here too
-    }
+    if (maxCapacity !== null && formData.participants_count > maxCapacity) return;
     handleSubmit();
   };
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
 
-      {/* ── Basic fields ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* Title */}
         <div className="md:col-span-2">
           <Label text="Título da Reunião *" />
           <input
@@ -138,7 +129,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* Date */}
         <div>
           <Label text="Data da Reunião *" />
           <input
@@ -150,7 +140,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* Start time */}
         <div>
           <Label text="Horário de Início *" />
           <input
@@ -162,7 +151,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* End time */}
         <div className="md:col-span-2">
           <Label text="Horário de Término *" />
           <input
@@ -174,7 +162,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* ── Location ── */}
         <div className="md:col-span-2">
           <Label text="Local *" />
           <select
@@ -192,7 +179,6 @@ export function AdminMeetingForm({
           </select>
         </div>
 
-        {/* Room info card */}
         {roomConfig && (
           <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-wrap gap-6">
             <RoomBadge
@@ -225,7 +211,6 @@ export function AdminMeetingForm({
           </div>
         )}
 
-        {/* ── Equipment checkboxes ── */}
         <div className="md:col-span-2">
           <Label text="Equipamentos" />
           <div className="flex flex-wrap gap-3 mt-1">
@@ -259,12 +244,11 @@ export function AdminMeetingForm({
           </div>
         </div>
 
-        {/* Other equipment */}
         <div className="md:col-span-2">
           <Label text="Outros equipamentos" />
           <input
             type="text"
-            value={formData.other_equipment || ""}
+            value={formData.other_equipment}
             onChange={(e) =>
               setFormData({ ...formData, other_equipment: e.target.value })
             }
@@ -274,7 +258,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* ── Participants ── */}
         <div className="md:col-span-2">
           <Label text="Quantidade de Participantes *" />
           <input
@@ -295,7 +278,6 @@ export function AdminMeetingForm({
             disabled={loading}
           />
 
-          {/* Capacity progress bar */}
           {maxCapacity !== null && formData.participants_count > 0 && (
             <div className="mt-3">
               <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -322,7 +304,6 @@ export function AdminMeetingForm({
             </div>
           )}
 
-          {/* Capacity warning */}
           {capacityWarning && (
             <div className="mt-2 flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
               <span className="text-base">⚠️</span>
@@ -331,7 +312,6 @@ export function AdminMeetingForm({
           )}
         </div>
 
-        {/* Responsible */}
         <div>
           <Label text="Responsável *" />
           <input
@@ -346,7 +326,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* Department */}
         <div>
           <Label text="Departamento do Responsável *" />
           <input
@@ -361,7 +340,6 @@ export function AdminMeetingForm({
           />
         </div>
 
-        {/* Description */}
         <div className="md:col-span-2">
           <Label text="Descrição/Pauta" />
           <textarea
@@ -377,7 +355,6 @@ export function AdminMeetingForm({
         </div>
       </div>
 
-      {/* ── Actions ── */}
       <div className="flex gap-4 pt-4">
         <button
           onClick={onSubmit}

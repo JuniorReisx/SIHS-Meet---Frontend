@@ -86,6 +86,14 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     }
   };
 
+  // ✅ Wrapper que garante que `equipment` nunca seja undefined
+  const handleSetFormData = (data: typeof formData | ((prev: typeof formData) => typeof formData)) => {
+    setFormData((prev) => {
+      const next = typeof data === 'function' ? data(prev) : data;
+      return { ...next, equipment: next.equipment ?? [] };
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -123,10 +131,10 @@ function CreateMeetingModal({ onClose, onSuccess }: { onClose: () => void; onSuc
             </div>
           </div>
 
-          {/* Formulário com todos os recursos de sala */}
+          {/* ✅ Usando handleSetFormData no lugar de setFormData direto */}
           <AdminMeetingForm
             formData={formData}
-            setFormData={setFormData}
+            setFormData={handleSetFormData}
             loading={loading}
             onClose={onClose}
             handleSubmit={handleSubmit}
@@ -274,6 +282,7 @@ export function HomeADMIN() {
 
   useEffect(() => {
     if (!loading) loadTotalMeetingsWithFilter(activeFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter, customStartDate, customEndDate, selectedMonth, selectedStatus]);
 
   const handleApproveMeeting = async (id: number) => {
