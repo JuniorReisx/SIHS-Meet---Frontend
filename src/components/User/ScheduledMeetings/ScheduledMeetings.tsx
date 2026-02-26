@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, Clock, Users, MapPin, AlertCircle, Loader2, RefreshCw, FileText } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { getAllMeetings } from "../../../services/meetingService";
 import type { Meeting } from "../../../types/types";
 
@@ -216,7 +216,7 @@ export function ScheduledMeetings() {
                 </div>
 
                 {/* Descrição */}
-                {reuniao.description && (
+                {/* {reuniao.description && (
                   <div className="pt-4 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <FileText size={18} className="text-gray-600" />
@@ -230,7 +230,7 @@ export function ScheduledMeetings() {
                       </p>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
 
               {/* Footer com Animação */}
