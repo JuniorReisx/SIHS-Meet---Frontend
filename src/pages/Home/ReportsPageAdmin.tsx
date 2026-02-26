@@ -213,7 +213,7 @@ export function ReportsPage() {
 
             {/* Botão Voltar */}
             <Link
-              to="/admin"
+              to="/ScheduledMeetingsADMIN"
               className="group inline-flex items-center gap-2 relative overflow-hidden px-3 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-white border border-purple-100 shadow-sm hover:shadow-md text-purple-700 hover:text-purple-900 font-semibold text-sm sm:text-base transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 flex-shrink-0"
             >
               <span className="absolute inset-0 bg-gradient-to-r from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" />
