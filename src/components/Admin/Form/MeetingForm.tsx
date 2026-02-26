@@ -181,9 +181,9 @@ export function MeetingForm({
             Descrição
           </label>
           <textarea
-            value={formData.description || ""}
+            value={formData.MeetingCalendar || ""}
             onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
+              setFormData({ ...formData, MeetingCalendar: e.target.value })
             }
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
             rows={4}

@@ -88,7 +88,7 @@ const convertToMeeting = (response: MeetingResponse): Meeting => {
     end_time: response.end_time,
     location: response.location,
     participants_count: response.participants_count,
-    description: response.description || "",
+    MeetingCalendar: response.description || "",
     responsible: response.responsible,
     responsible_department: response.responsible_department,
   };
@@ -104,7 +104,7 @@ const convertToPayload = (meeting: Partial<Meeting>): Partial<MeetingPayload> =>
   if (meeting.end_time !== undefined) payload.end_time = meeting.end_time;
   if (meeting.location !== undefined) payload.location = meeting.location;
   if (meeting.participants_count !== undefined) payload.participants_count = meeting.participants_count;
-  if (meeting.description !== undefined) payload.description = meeting.description;
+  if (meeting.MeetingCalendar !== undefined) payload.description = meeting.MeetingCalendar;
   if (meeting.responsible !== undefined) payload.responsible = meeting.responsible;
   if (meeting.responsible_department !== undefined) payload.responsible_department = meeting.responsible_department;
   
