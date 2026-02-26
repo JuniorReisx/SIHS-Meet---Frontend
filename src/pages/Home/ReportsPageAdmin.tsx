@@ -17,7 +17,8 @@ import { ReportsCharts } from "../../components/Admin/Reports/ReportsCharts";
 import type { Meeting } from "../../types/types";
 import type { Statistics } from "../../types/types";
 import type { ReportFilters } from "../../types/types";
-
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react"; // adiciona ao import já existente do lucide
 type ViewMode = "summary" | "charts" | "detailed";
 
 export function ReportsPage() {
@@ -205,32 +206,49 @@ export function ReportsPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       <HeaderAdmin />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+<div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Cabeçalho */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <FileText className="text-purple-600" size={36} />
-              Relatórios de Reuniões
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Análise completa e exportação de dados
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+
+            {/* Botão Voltar */}
+            <Link
+              to="/admin"
+              className="group inline-flex items-center gap-2 relative overflow-hidden px-3 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-white border border-purple-100 shadow-sm hover:shadow-md text-purple-700 hover:text-purple-900 font-semibold text-sm sm:text-base transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 flex-shrink-0"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" />
+              <ArrowLeft size={18} className="relative z-10 transition-transform duration-200 group-hover:-translate-x-1 flex-shrink-0" />
+              <span className="relative z-10 hidden sm:inline">Voltar ao Painel</span>
+              <span className="relative z-10 sm:hidden">Voltar</span>
+            </Link>
+
+            {/* Título */}
+            <div>
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
+                <FileText className="text-purple-600 flex-shrink-0" size={28} />
+                <span className="hidden sm:inline">Relatórios de Reuniões</span>
+                <span className="sm:hidden">Relatórios</span>
+              </h1>
+              <p className="text-gray-500 text-xs sm:text-sm mt-0.5 hidden sm:block">
+                Análise completa e exportação de dados
+              </p>
+            </div>
           </div>
 
+          {/* Botão PDF */}
           <button
             onClick={generatePDF}
             disabled={generatingPDF || filteredMeetings.length === 0}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base w-full sm:w-auto justify-center"
           >
             {generatingPDF ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                 Gerando PDF...
               </>
             ) : (
               <>
-                <Download size={20} />
+                <Download size={18} />
                 Exportar PDF
               </>
             )}
