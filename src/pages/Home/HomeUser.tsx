@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { ScheduledMeetings } from "../../components/User/ScheduledMeetings/ScheduledMeetings";
+// import { ScheduledMeetings } from "../../components/User/ScheduledMeetings/ScheduledMeetings";
 import { MeetingForm } from "../../components/User/MeetingForm/MeetingForm";
 import { HeaderUser } from "../../components/User/Header/HeaderUser";
 import { FooterUser } from "../../components/User/Footer/FooterUser";
 import type { Meeting } from "../../types/types";
+import { MeetingCalendar } from "../../components/User/ScheduledMeetings/CalendarUser";
 
 export function HomeUser() {
   const [reunioes, setReunioes] = useState<Meeting[]>([]);
@@ -18,7 +19,7 @@ export function HomeUser() {
     end_time: "",
     location: "",
     participants_count: 0,
-    description: "",
+    MeetingCalendar: "",
     responsible: "",
     responsible_department: "",
   });
@@ -41,7 +42,7 @@ export function HomeUser() {
       end_time: "",
       location: "",
       participants_count: 0,
-      description: "",
+      MeetingCalendar: "",
       responsible: "",
       responsible_department: "",
     });
@@ -83,7 +84,8 @@ export function HomeUser() {
         )}
 
         {/* Lista de Reuniões */}
-        <ScheduledMeetings />
+        {/* <ScheduledMeetings /> */}
+        <MeetingCalendar/>
       </div>
       <FooterUser />
     </div>
