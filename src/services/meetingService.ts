@@ -3,10 +3,9 @@
 import { useState } from "react";
 import type { Meeting } from "../types/types";
 
-const API_BASE_URL = "http://localhost:3000/api";
-
+const API_URL = import.meta.env.VITE_API_URL;
 // Detecta automaticamente o ambiente
-const API_URL = API_BASE_URL;
+
 
 // Interface para criar/atualizar reunião (formato da API)
 interface MeetingPayload {
