@@ -1,6 +1,23 @@
 import { useState } from "react";
-import { CheckCircle, Pencil, Trash2, Calendar, Clock, MapPin, Users, User, Building2, X, Save } from "lucide-react";
+import {
+  CheckCircle,
+  Pencil,
+  Trash2,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  User,
+  Building2,
+  X,
+  Save,
+  Loader2,
+  ChevronDown,
+  AlertCircle,
+} from "lucide-react";
 import { API_URL } from "../../../../config/api";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Meeting {
   id: number;
@@ -20,308 +37,197 @@ interface ConfirmedMeetingsListProps {
   onUpdate?: () => void;
 }
 
-function ConfirmedMeetingCard({ meeting, onUpdate }: { meeting: Meeting; onUpdate?: () => void }) {
-  const [expanded, setExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const cls = (...c: (string | false | null | undefined)[]) =>
+  c.filter(Boolean).join(" ");
+
+const INPUT =
+  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed";
+
+function FieldLabel({ text }: { text: string }) {
+  return (
+    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+      {text}
+    </label>
+  );
+}
+
+function SectionDivider({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+        {title}
+      </span>
+      <div className="flex-1 h-px bg-gray-100" />
+    </div>
+  );
+}
+
+function formatDate(dateStr: string) {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function formatTime(t?: string) {
+  return t ? t.slice(0, 5) : "—";
+}
+
+// ─── Edit Form ────────────────────────────────────────────────────────────────
+
+function EditForm({
+  meeting,
+  onCancel,
+  onSaved,
+}: {
+  meeting: Meeting;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
   const [formData, setFormData] = useState(meeting);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
-  const handleDelete = async () => {
-    if (!window.confirm(`Tem certeza que deseja excluir a reunião "${meeting.title}"?`)) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/meetingsConfirmed/${meeting.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao excluir reunião');
-      }
-
-      alert('Reunião excluída com sucesso!');
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Erro ao excluir reunião:', error);
-      alert('Erro ao excluir reunião');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const patch = (fields: Partial<Meeting>) =>
+    setFormData((prev) => ({ ...prev, ...fields }));
 
   const handleSave = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`${API_URL}/meetingsConfirmed/${meeting.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch(`${API_URL}/meetingsConfirmed/${meeting.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar reunião');
-      }
-
-      alert('Reunião atualizada com sucesso!');
-      setIsEditing(false);
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Erro ao atualizar reunião:', error);
-      alert('Erro ao atualizar reunião');
+      if (!res.ok) throw new Error("Erro ao atualizar reunião.");
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (isEditing) {
-    return (
-      <div className="bg-white rounded-2xl shadow-md border-2 border-green-200 overflow-hidden">
-        <div className="h-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"></div>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Editar Reunião</h3>
-            <button onClick={() => setIsEditing(false)} className="text-gray-500 hover:text-gray-700">
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Título</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Data</label>
-                <input
-                  type="date"
-                  value={formData.meeting_date}
-                  onChange={(e) => setFormData({...formData, meeting_date: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Participantes</label>
-                <input
-                  type="number"
-                  value={formData.participants_count}
-                  onChange={(e) => setFormData({...formData, participants_count: parseInt(e.target.value)})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-                  min="1"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Hora Início</label>
-                <input
-                  type="time"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Hora Fim</label>
-                <input
-                  type="time"
-                  value={formData.end_time || ''}
-                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Local</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Responsável</label>
-              <input
-                type="text"
-                value={formData.responsible}
-                onChange={(e) => setFormData({...formData, responsible: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Departamento</label>
-              <input
-                type="text"
-                value={formData.responsible_department}
-                onChange={(e) => setFormData({...formData, responsible_department: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Descrição</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none resize-none"
-                rows={4}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={() => setIsEditing(false)}
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-semibold transition-colors disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-              >
-                <Save size={20} />
-                {loading ? 'Salvando...' : 'Salvar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-green-200 overflow-hidden group">
-      <div className="h-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"></div>
-      
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-800 rounded-full text-xs font-bold border-2 border-green-300">
-            <CheckCircle size={16} />
-            CONFIRMADA
-          </span>
-        </div>
-
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-800 mb-2">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
+        <div>
+          <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-0.5">
+            Editar reunião
+          </p>
+          <h3 className="text-base font-bold text-gray-800 leading-tight truncate max-w-xs">
             {meeting.title}
           </h3>
-          <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
-            <Users size={14} />
-            {meeting.participants_count} participantes
-          </span>
         </div>
+        <button
+          onClick={onCancel}
+          disabled={loading}
+          aria-label="Cancelar edição"
+          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-40"
+        >
+          <X size={18} />
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <div className="flex items-center gap-2 text-gray-600">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Calendar size={16} className="text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Data</p>
-              <p className="text-sm font-medium">{meeting.meeting_date}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-gray-600">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-              <Clock size={16} className="text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Horário</p>
-              <p className="text-sm font-medium">
-                {meeting.start_time} - {meeting.end_time || "N/A"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-gray-600">
-            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-              <MapPin size={16} className="text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Local</p>
-              <p className="text-sm font-medium">{meeting.location}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-gray-600">
-            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-              <User size={16} className="text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Responsável</p>
-              <p className="text-sm font-medium">{meeting.responsible}</p>
-            </div>
-          </div>
-        </div>
-
-        {expanded && (
-          <div className="mt-4 p-5 bg-gradient-to-br from-gray-50 to-green-50 rounded-xl border border-green-100 space-y-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Building2 size={16} className="text-green-600" />
-                <h4 className="font-semibold text-gray-800 text-sm">Departamento</h4>
-              </div>
-              <p className="text-gray-700 text-sm pl-6">{meeting.responsible_department}</p>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h4 className="font-semibold text-gray-800 text-sm">Descrição</h4>
-              </div>
-              <p className="text-gray-700 text-sm leading-relaxed pl-6">
-                {meeting.description || "Sem descrição disponível"}
-              </p>
-            </div>
+      <div className="px-5 py-5 space-y-5">
+        {/* Erro */}
+        {error && (
+          <div role="alert" className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+            {error}
           </div>
         )}
 
-        <button 
-          onClick={() => setExpanded(!expanded)} 
-          className="w-full mt-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
-        >
-          {expanded ? "Ocultar detalhes ↑" : "Ver detalhes ↓"}
-        </button>
+        {/* Informações básicas */}
+        <div className="space-y-4">
+          <SectionDivider title="Informações básicas" />
 
-        <div className="flex gap-3 mt-5 pt-4 border-t border-gray-200">
-          <button 
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg group/edit disabled:opacity-50"
-            onClick={() => setIsEditing(true)}
+          <div>
+            <FieldLabel text="Título" />
+            <input type="text" value={formData.title} onChange={(e) => patch({ title: e.target.value })} className={INPUT} disabled={loading} />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <FieldLabel text="Data" />
+              <input type="date" value={formData.meeting_date} onChange={(e) => patch({ meeting_date: e.target.value })} className={INPUT} disabled={loading} />
+            </div>
+            <div>
+              <FieldLabel text="Início" />
+              <input type="time" value={formData.start_time} onChange={(e) => patch({ start_time: e.target.value })} className={INPUT} disabled={loading} />
+            </div>
+            <div>
+              <FieldLabel text="Término" />
+              <input type="time" value={formData.end_time || ""} onChange={(e) => patch({ end_time: e.target.value })} className={INPUT} disabled={loading} />
+            </div>
+          </div>
+        </div>
+
+        {/* Sala & Participantes */}
+        <div className="space-y-4">
+          <SectionDivider title="Sala e participantes" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel text="Local" />
+              <input type="text" value={formData.location} onChange={(e) => patch({ location: e.target.value })} className={INPUT} disabled={loading} />
+            </div>
+            <div>
+              <FieldLabel text="Participantes" />
+              <input type="number" min="1" value={formData.participants_count} onChange={(e) => patch({ participants_count: parseInt(e.target.value) || 1 })} className={INPUT} disabled={loading} />
+            </div>
+          </div>
+        </div>
+
+        {/* Responsável */}
+        <div className="space-y-4">
+          <SectionDivider title="Responsável" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel text="Nome" />
+              <input type="text" value={formData.responsible} onChange={(e) => patch({ responsible: e.target.value })} className={INPUT} disabled={loading} />
+            </div>
+            <div>
+              <FieldLabel text="Departamento" />
+              <input type="text" value={formData.responsible_department} onChange={(e) => patch({ responsible_department: e.target.value })} className={INPUT} disabled={loading} />
+            </div>
+          </div>
+        </div>
+
+        {/* Descrição */}
+        <div className="space-y-4">
+          <SectionDivider title="Descrição" />
+          <textarea
+            value={formData.description}
+            onChange={(e) => patch({ description: e.target.value })}
+            rows={3}
+            className={cls(INPUT, "resize-none")}
+            placeholder="Descreva a pauta..."
             disabled={loading}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col-reverse sm:flex-row gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            <Pencil size={20} className="group-hover/edit:scale-110 transition-transform" />
-            Editar
+            Cancelar
           </button>
-
-          <button 
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl transition-all duration-200 font-semibold text-sm shadow-md hover:shadow-lg group/delete disabled:opacity-50"
-            onClick={handleDelete}
+          <button
+            onClick={handleSave}
             disabled={loading}
+            className="w-full sm:flex-1 flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50"
           >
-            <Trash2 size={20} className="group-hover/delete:scale-110 transition-transform" />
-            {loading ? 'Excluindo...' : 'Excluir'}
+            {loading
+              ? <><Loader2 size={15} className="animate-spin" /> Salvando...</>
+              : <><Save size={15} /> Salvar alterações</>
+            }
           </button>
         </div>
       </div>
@@ -329,52 +235,173 @@ function ConfirmedMeetingCard({ meeting, onUpdate }: { meeting: Meeting; onUpdat
   );
 }
 
+// ─── Meeting Card ─────────────────────────────────────────────────────────────
+
+function ConfirmedMeetingCard({
+  meeting,
+  onUpdate,
+}: {
+  meeting: Meeting;
+  onUpdate?: () => void;
+}) {
+  const [expanded,  setExpanded]  = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Excluir a reunião "${meeting.title}"?`)) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/meetingsConfirmed/${meeting.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erro ao excluir reunião.");
+      onUpdate?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <EditForm
+        meeting={meeting}
+        onCancel={() => setIsEditing(false)}
+        onSaved={() => { setIsEditing(false); onUpdate?.(); }}
+      />
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      {/* Status stripe */}
+      <div className="h-0.5 bg-emerald-500" />
+
+      <div className="p-5">
+        {/* Top row */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <CheckCircle size={11} />
+                Confirmada
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-gray-800 truncate">{meeting.title}</h3>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={() => setIsEditing(true)}
+              disabled={deleting}
+              aria-label="Editar reunião"
+              className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              aria-label="Excluir reunião"
+              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+            >
+              {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div role="alert" className="mb-3 flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <AlertCircle size={13} /> {error}
+          </div>
+        )}
+
+        {/* Info grid */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <InfoChip icon={<Calendar size={13} className="text-blue-500" />}   label="Data"         value={formatDate(meeting.meeting_date)} />
+          <InfoChip icon={<Clock size={13} className="text-indigo-500" />}    label="Horário"      value={`${formatTime(meeting.start_time)} – ${formatTime(meeting.end_time)}`} />
+          <InfoChip icon={<MapPin size={13} className="text-purple-500" />}   label="Local"        value={meeting.location} />
+          <InfoChip icon={<Users size={13} className="text-emerald-500" />}   label="Participantes" value={`${meeting.participants_count} pessoa${meeting.participants_count !== 1 ? "s" : ""}`} />
+        </div>
+
+        {/* Expanded details */}
+        {expanded && (
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+            <InfoChip icon={<User size={13} className="text-orange-500" />}     label="Responsável"  value={meeting.responsible}            full />
+            <InfoChip icon={<Building2 size={13} className="text-gray-400" />}  label="Departamento" value={meeting.responsible_department}  full />
+            {meeting.description && (
+              <div className="bg-gray-50 rounded-lg px-3 py-2.5">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Descrição</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{meeting.description}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Toggle */}
+        <button
+          onClick={() => setExpanded((p) => !p)}
+          className="mt-3 w-full flex items-center justify-center gap-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <ChevronDown size={14} className={cls("transition-transform duration-200", expanded && "rotate-180")} />
+          {expanded ? "Ocultar detalhes" : "Ver detalhes"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Info Chip ────────────────────────────────────────────────────────────────
+
+function InfoChip({
+  icon,
+  label,
+  value,
+  full,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  full?: boolean;
+}) {
+  return (
+    <div className={cls("bg-gray-50 rounded-lg px-3 py-2", full && "col-span-2")}>
+      <div className="flex items-center gap-1 mb-0.5">
+        {icon}
+        <p className="text-xs text-gray-400 font-medium">{label}</p>
+      </div>
+      <p className="text-sm font-semibold text-gray-700 truncate">{value}</p>
+    </div>
+  );
+}
+
+// ─── List ─────────────────────────────────────────────────────────────────────
+
 export function ConfirmedMeetingsList({ meetings, onUpdate }: ConfirmedMeetingsListProps) {
   const safeMeetings = Array.isArray(meetings) ? meetings : [];
 
   if (safeMeetings.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-md border-2 border-green-200 overflow-hidden">
-        <div className="h-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"></div>
-        <div className="p-16 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-            <CheckCircle size={40} className="text-green-600" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">
-            Nenhuma reunião confirmada
-          </h3>
-          <p className="text-gray-500">
-            As reuniões aprovadas aparecerão aqui
-          </p>
+      <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 flex items-center justify-center">
+          <CheckCircle size={28} className="text-emerald-400" />
         </div>
+        <p className="font-semibold text-gray-700 mb-1">Nenhuma reunião confirmada</p>
+        <p className="text-sm text-gray-400">As reuniões aprovadas aparecerão aqui.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-400 flex items-center justify-center">
-              <CheckCircle size={20} className="text-white" />
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-800">
-                {safeMeetings.length} {safeMeetings.length === 1 ? 'reunião confirmada' : 'reuniões confirmadas'}
-              </h4>
-              <p className="text-sm text-gray-600">Você pode visualizar, editar ou excluir</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {safeMeetings.map(meeting => (
-        <ConfirmedMeetingCard
-          key={meeting.id}
-          meeting={meeting}
-          onUpdate={onUpdate}
-        />
+    <div className="space-y-3">
+      {safeMeetings.map((meeting) => (
+        <ConfirmedMeetingCard key={meeting.id} meeting={meeting} onUpdate={onUpdate} />
       ))}
     </div>
   );

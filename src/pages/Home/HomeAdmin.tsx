@@ -3,12 +3,12 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Plus,
-  X,
   List,
   Filter,
   TrendingUp,
   FileText,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeaderAdmin } from "../../components/Admin/Header/HeaderAdmin";
@@ -16,9 +16,13 @@ import { PendingMeetingsList } from "../../components/Admin/Meetings/Pending/Mee
 import { DeniedMeetingsList } from "../../components/Admin/Meetings/Denieds/MeetingsList";
 import { ConfirmedMeetingsList } from "../../components/Admin/Meetings/Confirmeds/MeetingList";
 import { TotalMeetingsList } from "../../components/Admin/Meetings/Total/MeetingList";
-import { AdminMeetingForm } from "../../components/Admin/AdminMeetingForm/AdminMeetingForm";
+import { MeetingForm } from "../../components/User/MeetingForm/MeetingForm";
 import { API_URL } from "../../config/api";
-import { CalendarAdmin } from "../../components/User/ScheduledMeetings/CalendarAdmin";
+import { MeetingCalendar } from "../../components/User/ScheduledMeetings/Calendar";
+import type { Meeting as MeetingType } from "../../types/types";
+import { FooterAdmin } from "../../components/Admin/Footer/FooterAdmin";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Meeting {
   id: number;
@@ -55,192 +59,157 @@ type FilterType =
   | "custom"
   | "month";
 
-// ─── Modal de criação ─────────────────────────────────────────────────────────
-function CreateMeetingModal({
-  onClose,
-  onSuccess,
+type FormData = Omit<MeetingType, "id">;
+
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+const EMPTY_FORM: FormData = {
+  title: "",
+  meeting_date: "",
+  start_time: "",
+  end_time: "",
+  location: "",
+  participants_count: 0,
+  MeetingCalendar: "",
+  responsible: "",
+  responsible_department: "",
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const cls = (...c: (string | false | null | undefined)[]) =>
+  c.filter(Boolean).join(" ");
+
+const INPUT =
+  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all disabled:bg-gray-50";
+
+// ─── Filter Panel ─────────────────────────────────────────────────────────────
+
+function FilterPanel({
+  activeFilter, setActiveFilter,
+  selectedStatus, setSelectedStatus,
+  customStartDate, setCustomStartDate,
+  customEndDate, setCustomEndDate,
+  selectedMonth, setSelectedMonth,
+  onApply, onClear,
 }: {
-  onClose: () => void;
-  onSuccess: () => void;
+  activeFilter: FilterType;      setActiveFilter: (f: FilterType) => void;
+  selectedStatus: string;        setSelectedStatus: (s: string) => void;
+  customStartDate: string;       setCustomStartDate: (d: string) => void;
+  customEndDate: string;         setCustomEndDate: (d: string) => void;
+  selectedMonth: string;         setSelectedMonth: (m: string) => void;
+  onApply: () => void;           onClear: () => void;
 }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    meeting_date: "",
-    start_time: "",
-    end_time: "",
-    location: "",
-    participants_count: 1,
-    description: "",
-    responsible: "",
-    responsible_department: "",
-    equipment: [] as string[],
-    other_equipment: "",
-  });
-
-  const handleSubmit = async () => {
-    if (
-      !formData.title ||
-      !formData.meeting_date ||
-      !formData.start_time ||
-      !formData.end_time ||
-      !formData.location ||
-      !formData.participants_count ||
-      !formData.responsible ||
-      !formData.responsible_department
-    ) {
-      setError("Por favor, preencha todos os campos obrigatórios (*)");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${API_URL}/meetingsPending`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Erro ao criar reunião");
-
-      alert("Reunião criada com sucesso! Ela está pendente de aprovação.");
-      onSuccess();
-      onClose();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao criar reunião";
-      setError(errorMessage);
-      console.error("Erro ao criar reunião:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Wrapper que garante que `equipment` nunca seja undefined
-  const handleSetFormData = (
-    data: typeof formData | ((prev: typeof formData) => typeof formData),
-  ) => {
-    setFormData((prev) => {
-      const next = typeof data === "function" ? data(prev) : data;
-      return { ...next, equipment: next.equipment ?? [] };
-    });
-  };
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header fixo */}
-        <div className="sticky top-0 bg-white border-b-2 border-blue-100 p-6 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-bold text-blue-900">Nova Reunião</h2>
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
-          >
-            <X size={24} />
-          </button>
+    <div className="bg-white rounded-xl border border-gray-200 mb-5 overflow-hidden">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Filter size={15} className="text-purple-500" />
+          Filtros
         </div>
+        <ChevronDown size={16} className={cls("text-gray-400 transition-transform duration-200", open && "rotate-180")} />
+      </button>
 
-        <div className="p-6">
-          {/* Erro global */}
-          {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
-              <p className="text-red-700 font-medium">{error}</p>
+      {open && (
+        <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Período</label>
+              <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value as FilterType)} className={INPUT}>
+                <option value="all">Todas</option>
+                <option value="last-10-days">Últimos 10 dias</option>
+                <option value="last-20-days">Últimos 20 dias</option>
+                <option value="last-month">Último mês</option>
+                <option value="last-year">Último ano</option>
+                <option value="upcoming">Futuras</option>
+                <option value="past">Passadas</option>
+                <option value="custom">Período customizado</option>
+                <option value="month">Mês específico</option>
+              </select>
             </div>
-          )}
-
-          {/* Aviso de pendência */}
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg mb-6">
-            <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
+              <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className={INPUT}>
+                <option value="all">Todos</option>
+                <option value="confirmed">Confirmadas</option>
+                <option value="pending">Pendentes</option>
+                <option value="denied">Negadas</option>
+              </select>
+            </div>
+            {activeFilter === "month" && (
               <div>
-                <h5 className="text-sm font-semibold text-yellow-900 mb-1">
-                  Atenção
-                </h5>
-                <p className="text-xs text-yellow-800">
-                  Esta reunião será criada como <strong>PENDENTE</strong> e
-                  precisará ser aprovada por um administrador.
-                </p>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Mês</label>
+                <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className={INPUT} />
               </div>
-            </div>
+            )}
+            {activeFilter === "custom" && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Data inicial</label>
+                  <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Data final</label>
+                  <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className={INPUT} />
+                </div>
+              </>
+            )}
           </div>
-
-          {/* ✅ Usando handleSetFormData no lugar de setFormData direto */}
-          <AdminMeetingForm
-            formData={formData}
-            setFormData={handleSetFormData}
-            loading={loading}
-            onClose={onClose}
-            handleSubmit={handleSubmit}
-          />
+          <div className="flex gap-2 pt-1">
+            <button onClick={onClear} className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              Limpar
+            </button>
+            <button onClick={onApply} className="px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
+              <TrendingUp size={14} /> Aplicar
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-// ─── Cards de estatísticas ────────────────────────────────────────────────────
-function StatisticsCards({ stats }: { stats: Statistics | null }) {
-  if (!stats) return null;
+// ─── Section Header ───────────────────────────────────────────────────────────
 
+function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count: number }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-        <div className="text-2xl font-bold">{stats.total}</div>
-        <div className="text-sm opacity-90">Total</div>
-      </div>
-      <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
-        <div className="text-2xl font-bold">{stats.confirmed}</div>
-        <div className="text-sm opacity-90">Confirmadas</div>
-      </div>
-      <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 text-white shadow-lg">
-        <div className="text-2xl font-bold">{stats.pending}</div>
-        <div className="text-sm opacity-90">Pendentes</div>
-      </div>
-      <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-lg">
-        <div className="text-2xl font-bold">{stats.denied}</div>
-        <div className="text-sm opacity-90">Negadas</div>
-      </div>
-      <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-        <div className="text-2xl font-bold">{stats.upcoming}</div>
-        <div className="text-sm opacity-90">Futuras</div>
-      </div>
-      <div className="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl p-4 text-white shadow-lg">
-        <div className="text-2xl font-bold">{stats.past}</div>
-        <div className="text-sm opacity-90">Passadas</div>
-      </div>
+    <div className="flex items-center gap-2">
+      {icon}
+      <h2 className="text-base font-bold text-gray-700">{title}</h2>
+      <span className="text-xs text-gray-400 font-medium">
+        ({count} {count === 1 ? "reunião" : "reuniões"})
+      </span>
     </div>
   );
 }
 
-// ─── Página principal ─────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export function HomeADMIN() {
   const [confirmedMeetings, setConfirmedMeetings] = useState<Meeting[]>([]);
-  const [pendingMeetings, setPendingMeetings] = useState<Meeting[]>([]);
-  const [deniedMeetings, setDeniedMeetings] = useState<Meeting[]>([]);
-  const [totalMeetings, setTotalMeetings] = useState<Meeting[]>([]);
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>("total");
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [pendingMeetings,   setPendingMeetings]   = useState<Meeting[]>([]);
+  const [deniedMeetings,    setDeniedMeetings]    = useState<Meeting[]>([]);
+  const [totalMeetings,     setTotalMeetings]     = useState<Meeting[]>([]);
+  const [statistics,        setStatistics]        = useState<Statistics | null>(null);
+  const [loading,           setLoading]           = useState(true);
+  const [activeTab,         setActiveTab]         = useState<TabType>("total");
 
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [activeFilter,    setActiveFilter]    = useState<FilterType>("all");
   const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [customEndDate,   setCustomEndDate]   = useState("");
+  const [selectedMonth,   setSelectedMonth]   = useState("");
+  const [selectedStatus,  setSelectedStatus]  = useState("all");
 
-  const loadStatistics = async () => {
-    try {
-      const response = await fetch(`${API_URL}/meetingsTotal/statistics`);
-      if (response.ok) setStatistics(await response.json());
-    } catch (error) {
-      console.error("Erro ao carregar estatísticas:", error);
-    }
-  };
+  // Formulário inline — mesma lógica do HomeUser
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
+
+  // ── Data fetching ──────────────────────────────────────────────────────────
 
   const extractMeetings = (data: unknown): Meeting[] => {
     if (Array.isArray(data)) return data;
@@ -251,77 +220,56 @@ export function HomeADMIN() {
     return [];
   };
 
+  const loadStatistics = async () => {
+    try {
+      const res = await fetch(`${API_URL}/meetingsTotal/statistics`);
+      if (res.ok) setStatistics(await res.json());
+    } catch { /* silencioso */ }
+  };
+
   const loadConfirmedMeetings = async () => {
     try {
       const res = await fetch(`${API_URL}/meetingsConfirmed/all`);
       if (!res.ok) throw new Error();
-      const meetings = extractMeetings(await res.json()).map((m) => ({
-        ...m,
-        status: "confirmed" as const,
-      }));
-      setConfirmedMeetings(meetings);
-    } catch {
-      setConfirmedMeetings([]);
-    }
+      setConfirmedMeetings(extractMeetings(await res.json()).map((m) => ({ ...m, status: "confirmed" as const })));
+    } catch { setConfirmedMeetings([]); }
   };
 
   const loadPendingMeetings = async () => {
     try {
       const res = await fetch(`${API_URL}/meetingsPending/all`);
       if (!res.ok) throw new Error();
-      const meetings = extractMeetings(await res.json()).map((m) => ({
-        ...m,
-        status: "pending" as const,
-      }));
-      setPendingMeetings(meetings);
-    } catch {
-      setPendingMeetings([]);
-    }
+      setPendingMeetings(extractMeetings(await res.json()).map((m) => ({ ...m, status: "pending" as const })));
+    } catch { setPendingMeetings([]); }
   };
 
   const loadDeniedMeetings = async () => {
     try {
       const res = await fetch(`${API_URL}/meetingsDenied/all`);
       if (!res.ok) throw new Error();
-      const meetings = extractMeetings(await res.json()).map((m) => ({
-        ...m,
-        status: "denied" as const,
-      }));
-      setDeniedMeetings(meetings);
-    } catch {
-      setDeniedMeetings([]);
-    }
+      setDeniedMeetings(extractMeetings(await res.json()).map((m) => ({ ...m, status: "denied" as const })));
+    } catch { setDeniedMeetings([]); }
   };
 
   const loadTotalMeetingsWithFilter = async (filter: FilterType) => {
     try {
       let url = `${API_URL}/meetingsTotal/all`;
-
-      if (filter === "last-10-days")
-        url = `${API_URL}/meetingsTotal/filter/last-10-days`;
-      else if (filter === "last-20-days")
-        url = `${API_URL}/meetingsTotal/filter/last-20-days`;
-      else if (filter === "last-month")
-        url = `${API_URL}/meetingsTotal/filter/last-month`;
-      else if (filter === "last-year")
-        url = `${API_URL}/meetingsTotal/filter/last-year`;
-      else if (filter === "upcoming")
-        url = `${API_URL}/meetingsTotal/filter/upcoming`;
-      else if (filter === "past") url = `${API_URL}/meetingsTotal/filter/past`;
+      if (filter === "last-10-days")      url = `${API_URL}/meetingsTotal/filter/last-10-days`;
+      else if (filter === "last-20-days") url = `${API_URL}/meetingsTotal/filter/last-20-days`;
+      else if (filter === "last-month")   url = `${API_URL}/meetingsTotal/filter/last-month`;
+      else if (filter === "last-year")    url = `${API_URL}/meetingsTotal/filter/last-year`;
+      else if (filter === "upcoming")     url = `${API_URL}/meetingsTotal/filter/upcoming`;
+      else if (filter === "past")         url = `${API_URL}/meetingsTotal/filter/past`;
       else if (filter === "custom" && customStartDate && customEndDate)
         url = `${API_URL}/meetingsTotal/range/dates?start=${customStartDate}&end=${customEndDate}`;
       else if (filter === "month" && selectedMonth)
         url = `${API_URL}/meetingsTotal/month/${selectedMonth}`;
-
       if (selectedStatus !== "all" && filter !== "custom" && filter !== "month")
         url = `${API_URL}/meetingsTotal/status/${selectedStatus}`;
-
       const res = await fetch(url);
       if (!res.ok) throw new Error();
       setTotalMeetings(extractMeetings(await res.json()));
-    } catch {
-      setTotalMeetings([]);
-    }
+    } catch { setTotalMeetings([]); }
   };
 
   const loadAllMeetings = async () => {
@@ -339,328 +287,208 @@ export function HomeADMIN() {
     }
   };
 
-  useEffect(() => {
-    loadAllMeetings();
-  }, []);
+  useEffect(() => { loadAllMeetings(); }, []);
 
   useEffect(() => {
     if (!loading) loadTotalMeetingsWithFilter(activeFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    activeFilter,
-    customStartDate,
-    customEndDate,
-    selectedMonth,
-    selectedStatus,
-  ]);
+  }, [activeFilter, customStartDate, customEndDate, selectedMonth, selectedStatus]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleApproveMeeting = async (id: number) => {
-    setPendingMeetings((prev) => prev.filter((m) => m.id !== id));
+    setPendingMeetings((p) => p.filter((m) => m.id !== id));
     await loadAllMeetings();
   };
 
   const handleDenyMeeting = async (id: number) => {
-    setPendingMeetings((prev) => prev.filter((m) => m.id !== id));
+    setPendingMeetings((p) => p.filter((m) => m.id !== id));
     await loadAllMeetings();
   };
 
   const handleRestoreMeeting = async (id: number) => {
-    setDeniedMeetings((prev) => prev.filter((m) => m.id !== id));
+    setDeniedMeetings((p) => p.filter((m) => m.id !== id));
     await loadAllMeetings();
   };
 
   const handleDeleteMeeting = async (id: number) => {
-    setDeniedMeetings((prev) => prev.filter((m) => m.id !== id));
+    setDeniedMeetings((p) => p.filter((m) => m.id !== id));
     await loadAllMeetings();
   };
 
-  const handleCreateSuccess = () => {
+  /**
+   * Calendário → pré-preenche o formulário e faz scroll até ele.
+   * Mesma lógica do HomeUser.
+   */
+  const handleNewMeetingFromCalendar = (date: string, startTime: string, endTime: string) => {
+    setFormData({ ...EMPTY_FORM, meeting_date: date, start_time: startTime, end_time: endTime });
+    setShowForm(true);
+    setTimeout(() =>
+      document.getElementById("admin-meeting-form")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50
+    );
+  };
+
+  const handleFormSuccess = () => {
+    setFormData(EMPTY_FORM);
+    setShowForm(false);
     loadAllMeetings();
     setActiveTab("pending");
   };
 
+  const handleFormCancel = () => {
+    setFormData(EMPTY_FORM);
+    setShowForm(false);
+  };
+
+  const clearFilters = () => {
+    setActiveFilter("all");
+    setSelectedStatus("all");
+    setCustomStartDate("");
+    setCustomEndDate("");
+    setSelectedMonth("");
+  };
+
+  // ─── Tabs ──────────────────────────────────────────────────────────────────
+
+  const TABS: { key: TabType; label: string; icon: React.ReactNode; count: number; activeColor: string }[] = [
+    { key: "total",     label: "Todas",       icon: <List size={15} />,        count: totalMeetings.length,     activeColor: "bg-gray-800 text-white"   },
+    { key: "confirmed", label: "Confirmadas", icon: <CheckCircle size={15} />, count: confirmedMeetings.length, activeColor: "bg-emerald-600 text-white" },
+    { key: "pending",   label: "Pendentes",   icon: <Clock size={15} />,       count: pendingMeetings.length,   activeColor: "bg-amber-500 text-white"  },
+    { key: "denied",    label: "Negadas",     icon: <XCircle size={15} />,     count: deniedMeetings.length,    activeColor: "bg-red-600 text-white"    },
+  ];
+
+  // ─── Loading ───────────────────────────────────────────────────────────────
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Carregando reuniões...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={36} className="text-purple-600 animate-spin" />
+          <p className="text-sm text-gray-500 font-medium">Carregando...</p>
         </div>
       </div>
     );
   }
 
+  // ─── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50">
       <HeaderAdmin />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            Gestão de Reuniões
-          </h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              to="/admin/reports"
-              className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group text-sm sm:text-base"
-            >
-              <FileText
-                size={18}
-                className="group-hover:scale-110 transition-transform flex-shrink-0"
-              />
-              <span className="hidden xs:inline sm:inline">Relatórios</span>
-            </Link>
-
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl group text-sm sm:text-base"
-            >
-              <Plus
-                size={18}
-                className="group-hover:scale-110 transition-transform flex-shrink-0"
-              />
-              <span>Nova Reunião</span>
-            </button>
-          </div>
-        </div>
-        {/* Estatísticas */}
-        <StatisticsCards stats={statistics} />
-
-        {/* Abas */}
-        <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-md p-1 inline-flex gap-1 flex-wrap">
-            {[
-              {
-                key: "total",
-                label: "Todas",
-                icon: <List size={20} />,
-                color: "bg-blue-600",
-                count: totalMeetings.length,
-              },
-              {
-                key: "confirmed",
-                label: "Confirmadas",
-                icon: <CheckCircle size={20} />,
-                color: "bg-green-500",
-                count: confirmedMeetings.length,
-              },
-              {
-                key: "pending",
-                label: "Pendentes",
-                icon: <Clock size={20} />,
-                color: "bg-yellow-500",
-                count: pendingMeetings.length,
-              },
-              {
-                key: "denied",
-                label: "Negadas",
-                icon: <XCircle size={20} />,
-                color: "bg-red-500",
-                count: deniedMeetings.length,
-              },
-            ].map(({ key, label, icon, color, count }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key as TabType)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-md font-semibold transition-all ${
-                  activeTab === key
-                    ? `${color} text-white shadow-md`
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {icon}
-                {label}
-                <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-white/20">
-                  {count}
+        {/* ── Top bar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-0.5">
+              Painel administrativo
+            </p>
+            <h1 className="text-2xl font-bold text-gray-800">Gestão de Reuniões</h1>
+            {statistics && (
+              <p className="text-gray-500 text-sm mt-0.5">
+                {statistics.total} reunião{statistics.total !== 1 ? "ões" : ""} cadastrada{statistics.total !== 1 ? "s" : ""}
+                {" · "}
+                <span className="text-purple-500 font-medium">
+                  Clique em um dia no calendário para agendar
                 </span>
-              </button>
-            ))}
+              </p>
+            )}
           </div>
+
+          <Link
+            to="/admin/reports"
+            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          >
+            <FileText size={15} />
+            Relatórios
+          </Link>
         </div>
 
-        {/* Filtros */}
-        {activeTab === "total" && (
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="text-blue-600" size={24} />
-              <h3 className="text-xl font-bold text-gray-800">Filtros</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Período
-                </label>
-                <select
-                  value={activeFilter}
-                  onChange={(e) =>
-                    setActiveFilter(e.target.value as FilterType)
-                  }
-                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="all">Todas</option>
-                  <option value="last-10-days">Últimos 10 dias</option>
-                  <option value="last-20-days">Últimos 20 dias</option>
-                  <option value="last-month">Último mês</option>
-                  <option value="last-year">Último ano</option>
-                  <option value="upcoming">Futuras</option>
-                  <option value="past">Passadas</option>
-                  <option value="custom">Período customizado</option>
-                  <option value="month">Por mês específico</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Status
-                </label>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="all">Todos</option>
-                  <option value="confirmed">Confirmadas</option>
-                  <option value="pending">Pendentes</option>
-                  <option value="denied">Negadas</option>
-                </select>
-              </div>
-
-              {activeFilter === "month" && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Selecione o Mês
-                  </label>
-                  <input
-                    type="month"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              )}
-
-              {activeFilter === "custom" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Data Inicial
-                    </label>
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Data Final
-                    </label>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => {
-                  setActiveFilter("all");
-                  setSelectedStatus("all");
-                  setCustomStartDate("");
-                  setCustomEndDate("");
-                  setSelectedMonth("");
-                }}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
-              >
-                Limpar Filtros
-              </button>
-              <button
-                onClick={() => loadTotalMeetingsWithFilter(activeFilter)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
-              >
-                <TrendingUp size={18} />
-                Aplicar Filtros
-              </button>
-            </div>
+        {/* ── Formulário inline ── */}
+        {showForm && (
+          <div id="admin-meeting-form">
+            <MeetingForm
+              formData={formData}
+              modoEdicao={false}
+              onFormChange={setFormData}
+              onSuccess={handleFormSuccess}
+              onCancel={handleFormCancel}
+            />
           </div>
         )}
 
-        {/* Conteúdo das abas */}
-        {activeTab === "total" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <List className="text-blue-600" />
-              Todas as Reuniões
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                ({totalMeetings.length}{" "}
-                {totalMeetings.length === 1 ? "reunião" : "reuniões"})
+        {/* ── Tabs ── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-1 flex gap-1 flex-wrap">
+          {TABS.map(({ key, label, icon, count, activeColor }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={cls(
+                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all",
+                activeTab === key
+                  ? activeColor + " shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              {icon}
+              {label}
+              <span className={cls(
+                "text-xs px-1.5 py-0.5 rounded-full font-bold",
+                activeTab === key ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500"
+              )}>
+                {count}
               </span>
-            </h2>
-            <TotalMeetingsList meetings={totalMeetings} />
-          </div>
-        )}
+            </button>
+          ))}
+        </div>
 
-        <br />
-        <CalendarAdmin />
+        {/* ── Tab content ── */}
+        <div>
+          {activeTab === "total" && (
+            <div className="space-y-4">
+              <FilterPanel
+                activeFilter={activeFilter}       setActiveFilter={setActiveFilter}
+                selectedStatus={selectedStatus}   setSelectedStatus={setSelectedStatus}
+                customStartDate={customStartDate} setCustomStartDate={setCustomStartDate}
+                customEndDate={customEndDate}     setCustomEndDate={setCustomEndDate}
+                selectedMonth={selectedMonth}     setSelectedMonth={setSelectedMonth}
+                onApply={() => loadTotalMeetingsWithFilter(activeFilter)}
+                onClear={clearFilters}
+              />
+              <SectionHeader icon={<List size={16} className="text-gray-500" />} title="Todas as Reuniões" count={totalMeetings.length} />
+              <TotalMeetingsList meetings={totalMeetings} />
+            </div>
+          )}
 
-        {activeTab === "pending" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Clock className="text-yellow-500" />
-              Reuniões Pendentes
-            </h2>
-            <PendingMeetingsList
-              meetings={pendingMeetings}
-              onApprove={handleApproveMeeting}
-              onDeny={handleDenyMeeting}
-            />
-          </div>
-        )}
+          {activeTab === "pending" && (
+            <div className="space-y-4">
+              <SectionHeader icon={<Clock size={16} className="text-amber-500" />} title="Reuniões Pendentes" count={pendingMeetings.length} />
+              <PendingMeetingsList meetings={pendingMeetings} onApprove={handleApproveMeeting} onDeny={handleDenyMeeting} />
+            </div>
+          )}
 
-        {activeTab === "confirmed" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <CheckCircle className="text-green-500" />
-              Reuniões Confirmadas
-            </h2>
-            <ConfirmedMeetingsList
-              meetings={confirmedMeetings}
-              onUpdate={loadAllMeetings}
-            />
-          </div>
-        )}
+          {activeTab === "confirmed" && (
+            <div className="space-y-4">
+              <SectionHeader icon={<CheckCircle size={16} className="text-emerald-500" />} title="Reuniões Confirmadas" count={confirmedMeetings.length} />
+              <ConfirmedMeetingsList meetings={confirmedMeetings} onUpdate={loadAllMeetings} />
+            </div>
+          )}
 
-        {activeTab === "denied" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <XCircle className="text-red-500" />
-              Reuniões Negadas
-            </h2>
-            <DeniedMeetingsList
-              meetings={deniedMeetings}
-              onRestore={handleRestoreMeeting}
-              onDelete={handleDeleteMeeting}
-            />
-          </div>
-        )}
+          {activeTab === "denied" && (
+            <div className="space-y-4">
+              <SectionHeader icon={<XCircle size={16} className="text-red-500" />} title="Reuniões Negadas" count={deniedMeetings.length} />
+              <DeniedMeetingsList meetings={deniedMeetings} onRestore={handleRestoreMeeting} onDelete={handleDeleteMeeting} />
+            </div>
+          )}
+        </div>
+
+        {/* ── Calendário ── */}
+        <MeetingCalendar onNewMeeting={handleNewMeetingFromCalendar} />
+
       </div>
-
-      {/* Modal de criação */}
-      {showCreateModal && (
-        <CreateMeetingModal
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={handleCreateSuccess}
-        />
-      )}
+      <FooterAdmin/>
     </div>
   );
 }

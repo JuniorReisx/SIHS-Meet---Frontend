@@ -9,403 +9,347 @@ import {
   X,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 import { API_URL } from "../../config/api";
-// Interface para tipar a resposta da API
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type LoginType = "usuario" | "admin";
+
 interface LoginResponse {
   token?: string;
-  user?: {
-    id: string;
-    username: string;
-    email?: string;
-    role?: string;
-  };
+  user?: { id: string; username: string; email?: string; role?: string };
   message?: string;
 }
 
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+const ENDPOINTS = {
+  admin: `${API_URL}/admin/login`,
+  user:  `${API_URL}/users/login`,
+  ldap:  `${API_URL}/ldap/login`,
+} as const;
+
+const ROUTES = {
+  admin:   "/ScheduledMeetingsADMIN",
+  usuario: "/ScheduledMeetings",
+} as const;
+
+const ERROR_MESSAGES: Record<number, string> = {
+  400: "Dados inválidos. Verifique usuário e senha.",
+  401: "Usuário ou senha incorretos.",
+  403: "Você não tem permissão para acessar este sistema.",
+  404: "Serviço indisponível. Tente novamente mais tarde.",
+  429: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+  500: "Erro interno do servidor. Contate o suporte.",
+  502: "Serviço temporariamente indisponível.",
+  503: "Sistema em manutenção. Tente novamente em breve.",
+};
+
+const DEFAULT_ERROR = "Não foi possível realizar o login. Tente novamente.";
+
+const SAFE_SERVER_MESSAGES = [
+  "Usuário não encontrado",
+  "Senha incorreta",
+  "Conta bloqueada",
+  "Usuário inativo",
+];
+
+// ─── Utilitários ──────────────────────────────────────────────────────────────
+
+function getFriendlyErrorMessage(status: number, serverMessage?: string): string {
+  if (serverMessage && SAFE_SERVER_MESSAGES.some((m) => serverMessage.includes(m))) {
+    return serverMessage;
+  }
+  return ERROR_MESSAGES[status] ?? DEFAULT_ERROR;
+}
+
+async function postLogin(endpoint: string, username: string, password: string): Promise<LoginResponse> {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!response.ok) {
+    let serverMessage: string | undefined;
+    try {
+      const errorData = await response.json();
+      serverMessage = errorData?.message;
+    } catch { /* sem corpo JSON */ }
+    throw new Error(getFriendlyErrorMessage(response.status, serverMessage));
+  }
+
+  return response.json() as Promise<LoginResponse>;
+}
+
+async function authenticate(
+  tipoLogin: LoginType,
+  username: string,
+  password: string
+): Promise<LoginResponse> {
+  if (tipoLogin === "admin") return postLogin(ENDPOINTS.admin, username, password);
+  try {
+    return await postLogin(ENDPOINTS.user, username, password);
+  } catch {
+    return postLogin(ENDPOINTS.ldap, username, password);
+  }
+}
+
+// ─── Helpers de estilo ────────────────────────────────────────────────────────
+
+const INPUT =
+  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed";
+
+// ─── Componente ───────────────────────────────────────────────────────────────
+
 export default function Login() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-
-  const [tipoLogin, setTipoLogin] = useState("usuario");
-  const [usuario, setUsuario] = useState("");
-  const [password, setPassword] = useState("");
+  const [tipoLogin,    setTipoLogin]    = useState<LoginType>("usuario");
+  const [usuario,      setUsuario]      = useState("");
+  const [password,     setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [loginData,    setLoginData]    = useState<LoginResponse | null>(null);
 
-  // Dados temporários para o modal de confirmação
-  const [loginData, setLoginData] = useState<LoginResponse | null>(null);
+  const isAdmin    = tipoLogin === "admin";
+  const clearError = () => setError("");
 
- const handleSubmit = async () => {
-  if (!usuario || !password) {
-    setError("Por favor, preencha todos os campos");
-    return;
-  }
+  const accentFocus  = isAdmin
+    ? "focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+    : "focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
-  setLoading(true);
-  setError("");
+  const accentButton = isAdmin
+    ? "bg-purple-600 hover:bg-purple-700"
+    : "bg-gray-800 hover:bg-gray-900";
 
-  try {
-    if (tipoLogin === "admin") {
-      const endpoint = `${API_URL}/admin/login`;
-      
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: usuario,
-          password: password,
-        }),
-      });
+  const accentConfirm = isAdmin
+    ? "bg-purple-600 hover:bg-purple-700"
+    : "bg-blue-600 hover:bg-blue-700";
 
-      // ✅ Verifica status ANTES de parsear
-      if (!response.ok) {
-        // Tenta pegar a mensagem de erro se houver
-        let errorMessage = "Usuário ou senha incorretos!";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          // Se não conseguir parsear, usa mensagem padrão
-          errorMessage = `Erro ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
+  const accentBadge = isAdmin ? "text-purple-700" : "text-blue-700";
+  const accentIcon  = isAdmin ? "bg-purple-50"    : "bg-blue-50";
+  const accentColor = isAdmin ? "text-purple-600"  : "text-blue-600";
 
-      const data = await response.json();
-      setLoginData(data as LoginResponse);
-      handleOpen();
-      
-    } else {
-      // Usuário: tenta primeira rota
-      let endpoint = `${API_URL}/users/login`;
-      
-      let response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: usuario,
-          password: password,
-        }),
-      });
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
-      // ✅ Verifica status ANTES de parsear
-      if (!response.ok) {
-        // Tenta rota LDAP
-        endpoint = `${API_URL}/ldap/login`;
-        
-        response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: usuario,
-            password: password,
-          }),
-        });
+  const handleTipoLoginChange = (tipo: LoginType) => {
+    setTipoLogin(tipo);
+    clearError();
+  };
 
-        // Se a segunda rota também falhar
-        if (!response.ok) {
-          let errorMessage = "Usuário ou senha incorretos!";
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
-          } catch {
-            errorMessage = `Erro ${response.status}: ${response.statusText}`;
-          }
-          throw new Error(errorMessage);
-        }
-      }
-
-      // Se chegou aqui, uma das rotas funcionou
-      const data = await response.json();
-      setLoginData(data as LoginResponse);
-      handleOpen();
+  const handleSubmit = async () => {
+    if (!usuario.trim() || !password) {
+      setError("Por favor, preencha todos os campos.");
+      return;
     }
-  } catch (err) {
-    const errorMessage = err instanceof Error 
-      ? err.message 
-      : "Erro ao fazer login. Tente novamente.";
-    setError(errorMessage);
-    console.error("Erro no login:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    clearError();
+    try {
+      const data = await authenticate(tipoLogin, usuario.trim(), password);
+      setLoginData(data);
+      setModalOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : DEFAULT_ERROR);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !loading) handleSubmit();
+  };
 
   const handleConfirmLogin = () => {
     if (!loginData) return;
-
-    // Salva as informações no localStorage
     localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userRole", tipoLogin);
-    localStorage.setItem("username", usuario);
-    
-    // Se o backend retornar um token, salve-o também
-    if (loginData.token) {
-      localStorage.setItem("authToken", loginData.token);
-    }
-
-    // Se houver outros dados do usuário, salve-os
-    if (loginData.user) {
-      localStorage.setItem("userData", JSON.stringify(loginData.user));
-    }
-
-    // Navega para a página apropriada
-    if (tipoLogin === "admin") {
-      navigate("/ScheduledMeetingsADMIN");
-    } else {
-      navigate("/ScheduledMeetings");
-    }
+    localStorage.setItem("userRole",        tipoLogin);
+    localStorage.setItem("username",        usuario);
+    if (loginData.token) localStorage.setItem("authToken", loginData.token);
+    if (loginData.user)  localStorage.setItem("userData",  JSON.stringify(loginData.user));
+    navigate(ROUTES[tipoLogin]);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !loading) {
-      handleSubmit();
-    }
-  };
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div
-            className={`${
-              tipoLogin === "admin"
-                ? "bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800"
-                : "bg-gradient-to-r from-gray-800 via-slate-700 to-gray-800"
-            } p-8 text-center transition-all duration-300`}
-          >
-            <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
-              {tipoLogin === "admin" ? (
-                <Shield size={40} className="text-purple-600" />
-              ) : (
-                <LogIn size={40} className="text-blue-600" />
-              )}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+
+        {/* Card principal */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
+          {/* Header */}
+          <div className="px-6 pt-8 pb-6 text-center border-b border-gray-100">
+            <div className={`w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center ${accentIcon}`}>
+              {isAdmin
+                ? <Shield   size={24} className={accentColor} />
+                : <LogIn    size={24} className={accentColor} />}
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {tipoLogin === "admin" ? "Acesso Administrativo" : "Bem-vindo!"}
+            <h1 className="text-xl font-bold text-gray-800 tracking-tight">
+              {isAdmin ? "Acesso Administrativo" : "Bem-vindo"}
             </h1>
-            <p className="text-blue-100">
+            <p className="text-xs text-gray-400 mt-1">
               Sistema de Gerenciamento de Reuniões
             </p>
           </div>
 
-          <div className="p-6 pb-0">
-            <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => {
-                  setTipoLogin("usuario");
-                  setError("");
-                }}
-                disabled={loading}
-                className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all duration-200 ${
-                  tipoLogin === "usuario"
-                    ? "bg-white text-blue-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                Usuário
-              </button>
-              <button
-                onClick={() => {
-                  setTipoLogin("admin");
-                  setError("");
-                }}
-                disabled={loading}
-                className={`flex-1 py-2 px-4 rounded-md font-semibold transition-all duration-200 ${
-                  tipoLogin === "admin"
-                    ? "bg-white text-purple-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                Admin
-              </button>
-            </div>
-          </div>
+          <div className="px-6 py-6 space-y-4">
 
-          <div className="p-8 space-y-6">
-            {/* Mensagem de erro */}
+            {/* Seletor de tipo */}
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              {(["usuario", "admin"] as LoginType[]).map((tipo) => (
+                <button
+                  key={tipo}
+                  onClick={() => handleTipoLoginChange(tipo)}
+                  disabled={loading}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-150
+                    ${tipoLogin === tipo
+                      ? `bg-white shadow-sm ${tipo === "admin" ? "text-purple-600" : "text-blue-600"}`
+                      : "text-gray-500 hover:text-gray-700"}
+                    disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {tipo === "usuario" ? "Usuário" : "Admin"}
+                </button>
+              ))}
+            </div>
+
+            {/* Erro */}
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3 animate-shake">
-                <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-red-700 text-sm">{error}</p>
+              <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2.5">
+                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                {error}
               </div>
             )}
 
+            {/* Usuário */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {tipoLogin === "admin" ? "Usuário Admin" : "Usuário"}
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                {isAdmin ? " Administrador" : "Usuário"}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={20} className="text-gray-400" />
-                </div>
+                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   value={usuario}
-                  onChange={(e) => {
-                    setUsuario(e.target.value);
-                    setError("");
-                  }}
-                  onKeyPress={handleKeyPress}
+                  onChange={(e) => { setUsuario(e.target.value); clearError(); }}
+                  onKeyDown={handleKeyDown}
                   disabled={loading}
-                  className={`w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-colors ${
-                    tipoLogin === "admin"
-                      ? "focus:border-purple-500"
-                      : "focus:border-blue-500"
-                  } ${loading ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                  placeholder={tipoLogin === "admin" ? "admin" : "usuario"}
+                  placeholder={isAdmin ? "suporte.setor" : "setor.sihs"}
+                  className={`${INPUT} pl-9 ${accentFocus}`}
                 />
               </div>
             </div>
-            
+
+            {/* Senha */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Senha
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={20} className="text-gray-400" />
-                </div>
+                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
-                  onKeyPress={handleKeyPress}
+                  onChange={(e) => { setPassword(e.target.value); clearError(); }}
+                  onKeyDown={handleKeyDown}
                   disabled={loading}
-                  className={`w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:outline-none transition-colors ${
-                    tipoLogin === "admin"
-                      ? "focus:border-purple-500"
-                      : "focus:border-blue-500"
-                  } ${loading ? "bg-gray-100 cursor-not-allowed" : ""}`}
                   placeholder="••••••••"
+                  className={`${INPUT} pl-9 pr-10 ${accentFocus}`}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((p) => !p)}
                   disabled={loading}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
             </div>
 
+            {/* Submit */}
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className={`w-full font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 ${
-                tipoLogin === "admin"
-                  ? "bg-gradient-to-r from-purple-800 via-purple-700 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white"
-                  : "bg-gradient-to-r from-gray-800 via-slate-700 to-gray-800 hover:from-gray-700 hover:to-gray-900 text-white"
-              } ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition-colors mt-2
+                ${accentButton} disabled:opacity-70 disabled:cursor-not-allowed`}
             >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Entrando...</span>
-                </>
-              ) : (
-                <>
-                  {tipoLogin === "admin" ? (
-                    <Shield size={20} />
-                  ) : (
-                    <LogIn size={20} />
-                  )}
-                  {tipoLogin === "admin" ? "Entrar como Admin" : "Entrar"}
-                </>
-              )}
+              {loading
+                ? <><Loader2 size={14} className="animate-spin" /> Entrando...</>
+                : <>{isAdmin ? <Shield size={14} /> : <LogIn size={14} />}
+                   {isAdmin ? "Entrar como Administrador" : "Entrar"}</>}
             </button>
           </div>
         </div>
+
+        {/* Rodapé */}
+        <p className="text-center text-xs text-gray-400 mt-4">
+          SIHS · Secretaria de Infraestrutura Hídrica e Saneamento
+        </p>
       </div>
 
-      {/* Modal de Confirmação */}
-      {open && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={handleClose}
+      {/* ── Modal de confirmação ── */}
+      {modalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setModalOpen(false)}
         >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn"
+          <div
+            className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-sm w-full overflow-hidden"
+            style={{ animation: "slideUp 0.2s ease-out" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header do Modal */}
-            <div className={`${
-              tipoLogin === "admin"
-                ? "bg-gradient-to-r from-purple-600 to-purple-800"
-                : "bg-gradient-to-r from-blue-600 to-indigo-600"
-            } p-6 relative`}>
+            {/* Header modal */}
+            <div className="px-6 pt-6 pb-5 border-b border-gray-100 text-center relative">
               <button
-                onClick={handleClose}
-                className="absolute right-4 top-4 text-white hover:bg-white/20 rounded-full p-1 transition-colors"
+                onClick={() => setModalOpen(false)}
+                aria-label="Fechar"
+                className="absolute right-4 top-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               >
-                <X size={20} />
+                <X size={15} />
               </button>
-              
-              <div className="flex items-center justify-center mb-3">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                  {tipoLogin === "admin" ? (
-                    <Shield size={32} className="text-purple-600" />
-                  ) : (
-                    <CheckCircle size={32} className="text-blue-600" />
-                  )}
-                </div>
+              <div className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center ${accentIcon}`}>
+                {isAdmin
+                  ? <Shield      size={24} className={accentColor} />
+                  : <CheckCircle size={24} className={accentColor} />}
               </div>
-              
-              <h2 className="text-white text-center font-bold text-2xl">
-                Login Bem-sucedido!
-              </h2>
-              <p className="text-white/90 text-center mt-1 text-sm">
-                {tipoLogin === "admin" ? "Acesso Administrativo" : "Acesso de Usuário"}
-              </p>
+              <h2 className="text-base font-bold text-gray-800">Login realizado com sucesso</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Confirme seus dados antes de continuar</p>
             </div>
 
-            {/* Conteúdo do Modal */}
-            <div className="p-6">
-              <div className="space-y-3 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 mb-1">Usuário:</p>
-                  <p className="font-semibold text-gray-800">{usuario}</p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 mb-1">Tipo de Acesso:</p>
-                  <p className="font-semibold text-gray-800">
-                    {tipoLogin === "admin" ? "Administrador" : "Usuário"}
-                  </p>
-                </div>
+            {/* Corpo modal */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="space-y-2">
+                {[
+                  { label: "Usuário",        value: usuario                               },
+                  { label: "Tipo de acesso", value: isAdmin ? "Administrador" : "Usuário" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-gray-50 rounded-lg px-4 py-3">
+                    <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+                    <p className={`text-sm font-bold ${accentBadge}`}>{value}</p>
+                  </div>
+                ))}
               </div>
 
-              <div className="flex gap-3">
-                <button 
-                  onClick={handleClose}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-lg transition-all duration-200"
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1 py-2.5 text-sm font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   onClick={handleConfirmLogin}
-                  className={`flex-1 font-bold py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-white ${
-                    tipoLogin === "admin"
-                      ? "bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  }`}
+                  className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg shadow-sm transition-colors ${accentConfirm}`}
                 >
                   Confirmar
                 </button>
@@ -416,27 +360,9 @@ export default function Login() {
       )}
 
       <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
-        }
-        .animate-shake {
-          animation: shake 0.3s ease-in-out;
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0);    }
         }
       `}</style>
     </div>
