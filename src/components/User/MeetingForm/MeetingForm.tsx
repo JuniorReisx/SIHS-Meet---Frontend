@@ -38,7 +38,7 @@ const cls = (...classes: (string | false | null | undefined)[]) =>
   classes.filter(Boolean).join(" ");
 
 const INPUT =
-  "w-full min-w-0 px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
+  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -181,6 +181,7 @@ export function MeetingForm({
         <div className="space-y-4">
           <SectionDivider title="Informações básicas" />
 
+          {/* Título */}
           <div>
             <FieldLabel text="Título *" />
             <input
@@ -194,15 +195,13 @@ export function MeetingForm({
           </div>
 
           {/*
-           * LAYOUT DATA/HORA — responsivo para qualquer tela:
-           *
-           * Mobile  (<640px): Data = linha inteira (col-span-2)
-           *                   Início | Término lado a lado (col-span-1 cada)
-           *
-           * Desktop (≥640px): Data | Início | Término — 3 colunas iguais
+           * Data, Início e Término — todos empilhados (1 coluna), largura máxima limitada.
+           * Isso elimina qualquer problema de overflow em qualquer tamanho de tela.
+           * No desktop ficam lado a lado (3 colunas) para não desperdiçar espaço.
            */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="col-span-2 sm:col-span-1 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Data — largura máxima para não esticar demais no desktop */}
+            <div className="w-full max-w-xs sm:max-w-none">
               <FieldLabel text="Data *" />
               <input
                 type="date"
@@ -212,7 +211,9 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-            <div className="col-span-1 min-w-0">
+
+            {/* Início — largura máxima limitada no mobile */}
+            <div className="w-full max-w-xs sm:max-w-none">
               <FieldLabel text="Início *" />
               <input
                 type="time"
@@ -222,7 +223,9 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-            <div className="col-span-1 min-w-0">
+
+            {/* Término — largura máxima limitada no mobile */}
+            <div className="w-full max-w-xs sm:max-w-none">
               <FieldLabel text="Término *" />
               <input
                 type="time"
@@ -297,12 +300,10 @@ export function MeetingForm({
                   >
                     <Icon size={14} />
                     {label}
-                    <span
-                      className={cls(
-                        "w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors flex-shrink-0",
-                        active ? "border-blue-500 bg-blue-500 text-white" : "border-gray-300"
-                      )}
-                    >
+                    <span className={cls(
+                      "w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors flex-shrink-0",
+                      active ? "border-blue-500 bg-blue-500 text-white" : "border-gray-300"
+                    )}>
                       {active && "✓"}
                     </span>
                   </button>
@@ -441,12 +442,7 @@ function RoomInfoItem({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MODAL WRAPPER
-// Uso: <MeetingFormModal open={open} onClose={() => setOpen(false)}>
-//        <MeetingForm ... />
-//      </MeetingFormModal>
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Modal Wrapper ────────────────────────────────────────────────────────────
 
 interface MeetingFormModalProps {
   open: boolean;
@@ -461,17 +457,8 @@ export function MeetingFormModal({ open, onClose, children }: MeetingFormModalPr
       className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
-      {/*
-       * flex min-h-full items-start sm:items-center:
-       *   → mobile:  alinha ao topo (form grande não fica cortado)
-       *   → desktop: centraliza verticalmente
-       * px-4 py-6: respiro lateral/vertical em qualquer tela
-       */}
       <div className="flex min-h-full items-start sm:items-center justify-center px-4 py-6">
-        <div
-          className="w-full max-w-lg"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>
