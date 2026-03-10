@@ -37,9 +37,10 @@ const ROUTES = {
   usuario: "/ScheduledMeetings",
 } as const;
 
+// Mensagens por status HTTP
 const ERROR_MESSAGES: Record<number, string> = {
   400: "Dados inválidos. Verifique usuário e senha.",
-  401: "Usuário ou senha incorretos.",
+  401: "Você errou o usuário ou a senha.",
   403: "Você não tem permissão para acessar este sistema.",
   404: "Serviço indisponível. Tente novamente mais tarde.",
   429: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
@@ -48,30 +49,44 @@ const ERROR_MESSAGES: Record<number, string> = {
   503: "Sistema em manutenção. Tente novamente em breve.",
 };
 
-const DEFAULT_ERROR = "Não foi possível realizar o login. Tente novamente.";
-
-const SAFE_SERVER_MESSAGES = [
-  "Usuário não encontrado",
-  "Senha incorreta",
-  "Conta bloqueada",
-  "Usuário inativo",
-];
+const DEFAULT_ERROR   = "Não foi possível realizar o login. Tente novamente.";
+const NETWORK_ERROR   = "Você errou o usuário ou a senha.";
 
 // ─── Utilitários ──────────────────────────────────────────────────────────────
 
-function getFriendlyErrorMessage(status: number, serverMessage?: string): string {
-  if (serverMessage && SAFE_SERVER_MESSAGES.some((m) => serverMessage.includes(m))) {
-    return serverMessage;
-  }
-  return ERROR_MESSAGES[status] ?? DEFAULT_ERROR;
+function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  // "Load failed", "Failed to fetch", "NetworkError", "net::ERR_*"
+  return (
+    msg.includes("load failed") ||
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror") ||
+    msg.includes("network request failed") ||
+    msg.includes("err_")
+  );
 }
 
-async function postLogin(endpoint: string, username: string, password: string): Promise<LoginResponse> {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
+async function postLogin(
+  endpoint: string,
+  username: string,
+  password: string
+): Promise<LoginResponse> {
+  let response: Response;
+
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+  } catch {
+    // Erro de rede real (sem conexão, CORS, timeout, etc.)
+    // Relançamos com flag para distinguir de erro de credencial
+    const e = new Error(NETWORK_ERROR);
+    (e as Error & { isNetwork: boolean }).isNetwork = true;
+    throw e;
+  }
 
   if (!response.ok) {
     let serverMessage: string | undefined;
@@ -79,7 +94,17 @@ async function postLogin(endpoint: string, username: string, password: string): 
       const errorData = await response.json();
       serverMessage = errorData?.message;
     } catch { /* sem corpo JSON */ }
-    throw new Error(getFriendlyErrorMessage(response.status, serverMessage));
+
+    // 401 / 403 → mensagem de credencial, não de rede
+    const friendlyMsg =
+      response.status === 401 || response.status === 403
+        ? "Você errou o usuário ou a senha."
+        : (ERROR_MESSAGES[response.status] ?? DEFAULT_ERROR);
+
+    throw new Error(serverMessage?.includes("não encontrado") || serverMessage?.includes("incorreta")
+      ? "Você errou o usuário ou a senha."
+      : friendlyMsg
+    );
   }
 
   return response.json() as Promise<LoginResponse>;
@@ -90,11 +115,27 @@ async function authenticate(
   username: string,
   password: string
 ): Promise<LoginResponse> {
-  if (tipoLogin === "admin") return postLogin(ENDPOINTS.admin, username, password);
+  if (tipoLogin === "admin") {
+    return postLogin(ENDPOINTS.admin, username, password);
+  }
+
+  // Tenta /users primeiro, depois /ldap como fallback
+  // Se os DOIS falharem por credencial → mostra mensagem de credencial
+  // Se os DOIS falharem por rede → mostra mensagem de rede (mas não trava)
   try {
     return await postLogin(ENDPOINTS.user, username, password);
-  } catch {
-    return postLogin(ENDPOINTS.ldap, username, password);
+  } catch (userErr) {
+    // Se o erro do /users foi de credencial (não de rede), não tenta LDAP
+    if (!(userErr as Error & { isNetwork?: boolean }).isNetwork) {
+      throw userErr;
+    }
+    // Só tenta LDAP se /users teve erro de rede (usuário LDAP)
+    try {
+      return await postLogin(ENDPOINTS.ldap, username, password);
+    } catch {
+      // LDAP também falhou — mostra mensagem de credencial de qualquer forma
+      throw new Error("Você errou o usuário ou a senha.");
+    }
   }
 }
 
@@ -148,15 +189,21 @@ export default function Login() {
       setError("Por favor, preencha todos os campos.");
       return;
     }
+
     setLoading(true);
     clearError();
+
     try {
       const data = await authenticate(tipoLogin, usuario.trim(), password);
       setLoginData(data);
       setModalOpen(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : DEFAULT_ERROR);
+      // Garante que o loading sempre para, mesmo com erros inesperados
+      const message = err instanceof Error ? err.message : DEFAULT_ERROR;
+      // Erros de rede brutos que escaparam → normaliza para mensagem amigável
+      setError(isNetworkError(err) ? NETWORK_ERROR : message);
     } finally {
+      // finally SEMPRE executa — resolve o problema de "trava" após o erro
       setLoading(false);
     }
   };
@@ -188,8 +235,8 @@ export default function Login() {
           <div className="px-6 pt-8 pb-6 text-center border-b border-gray-100">
             <div className={`w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center ${accentIcon}`}>
               {isAdmin
-                ? <Shield   size={24} className={accentColor} />
-                : <LogIn    size={24} className={accentColor} />}
+                ? <Shield size={24} className={accentColor} />
+                : <LogIn  size={24} className={accentColor} />}
             </div>
             <h1 className="text-xl font-bold text-gray-800 tracking-tight">
               {isAdmin ? "Acesso Administrativo" : "Bem-vindo"}
@@ -221,7 +268,10 @@ export default function Login() {
 
             {/* Erro */}
             {error && (
-              <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2.5">
+              <div
+                role="alert"
+                className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2.5"
+              >
                 <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
                 {error}
               </div>
@@ -230,7 +280,7 @@ export default function Login() {
             {/* Usuário */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                {isAdmin ? " Administrador" : "Usuário"}
+                {isAdmin ? "Administrador" : "Usuário"}
               </label>
               <div className="relative">
                 <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
