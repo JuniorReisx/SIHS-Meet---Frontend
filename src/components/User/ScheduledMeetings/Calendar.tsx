@@ -193,9 +193,8 @@ function NewMeetingPrompt({
         </div>
 
         {/* Body */}
-{/* Body */}
+        {/* Body */}
         <div className="p-4 sm:p-6 space-y-4">
-
           {/*
            * Início e Término — empilhados no mobile, lado a lado no desktop.
            * max-w-xs limita a largura no mobile para não esticar demais.
@@ -246,15 +245,22 @@ function NewMeetingPrompt({
                       size={13}
                       className={`flex-shrink-0 ${isConflicting ? "text-red-500" : "text-gray-400"}`}
                     />
-                    <span className={`font-medium whitespace-nowrap flex-shrink-0 ${isConflicting ? "text-red-700" : "text-gray-700"}`}>
+                    <span
+                      className={`font-medium whitespace-nowrap flex-shrink-0 ${isConflicting ? "text-red-700" : "text-gray-700"}`}
+                    >
                       {formatHour(m.start_time)}
                       {m.end_time && ` – ${formatHour(m.end_time)}`}
                     </span>
-                    <span className={`truncate ${isConflicting ? "text-red-600" : "text-gray-500"}`}>
+                    <span
+                      className={`truncate ${isConflicting ? "text-red-600" : "text-gray-500"}`}
+                    >
                       · {m.title}
                     </span>
                     {isConflicting && (
-                      <TriangleAlert size={13} className="text-red-500 flex-shrink-0 ml-auto" />
+                      <TriangleAlert
+                        size={13}
+                        className="text-red-500 flex-shrink-0 ml-auto"
+                      />
                     )}
                   </div>
                 );
@@ -265,9 +271,14 @@ function NewMeetingPrompt({
           {/* Alerta de conflito */}
           {hasConflict && touched && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
-              <TriangleAlert size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <TriangleAlert
+                size={16}
+                className="text-amber-500 flex-shrink-0 mt-0.5"
+              />
               <div>
-                <p className="text-amber-800 font-semibold text-sm">Conflito de horário</p>
+                <p className="text-amber-800 font-semibold text-sm">
+                  Conflito de horário
+                </p>
                 <p className="text-amber-700 text-xs mt-0.5 leading-relaxed">
                   O horário escolhido conflita com {conflicts.length} reunião
                   {conflicts.length !== 1 ? "ões" : ""} existente
@@ -298,7 +309,6 @@ function NewMeetingPrompt({
               <span>{hasConflict ? "Agendar mesmo assim" : "Agendar"}</span>
             </button>
           </div>
-
         </div>
       </div>
 
