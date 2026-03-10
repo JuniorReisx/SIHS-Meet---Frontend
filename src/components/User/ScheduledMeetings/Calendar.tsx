@@ -193,10 +193,12 @@ function NewMeetingPrompt({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5">
-          {/* Horário */}
+{/* Body */}
+        <div className="p-4 sm:p-6 space-y-4">
+
+          {/* Horário — 2 colunas sempre, mas com min-w-0 para não vazar */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
                 Início
               </label>
@@ -204,10 +206,10 @@ function NewMeetingPrompt({
                 type="time"
                 value={form.start_time}
                 onChange={(e) => handleChange("start_time", e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full min-w-0 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
                 Término
               </label>
@@ -215,15 +217,15 @@ function NewMeetingPrompt({
                 type="time"
                 value={form.end_time}
                 onChange={(e) => handleChange("end_time", e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full min-w-0 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               />
             </div>
           </div>
 
           {/* Reuniões existentes no dia */}
           {existingMeetings.length > 0 && (
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                 Reuniões neste dia
               </p>
               {existingMeetings.map((m) => {
@@ -239,18 +241,16 @@ function NewMeetingPrompt({
                   >
                     <Clock
                       size={13}
-                      className={
-                        isConflicting ? "text-red-500" : "text-gray-400"
-                      }
+                      className={`flex-shrink-0 ${isConflicting ? "text-red-500" : "text-gray-400"}`}
                     />
                     <span
-                      className={`font-medium ${isConflicting ? "text-red-700" : "text-gray-700"}`}
+                      className={`font-medium whitespace-nowrap flex-shrink-0 ${isConflicting ? "text-red-700" : "text-gray-700"}`}
                     >
                       {formatHour(m.start_time)}
                       {m.end_time && ` – ${formatHour(m.end_time)}`}
                     </span>
                     <span
-                      className={`truncate ${isConflicting ? "text-red-600" : "text-gray-500"}`}
+                      className={`truncate min-w-0 ${isConflicting ? "text-red-600" : "text-gray-500"}`}
                     >
                       · {m.title}
                     </span>
@@ -268,16 +268,16 @@ function NewMeetingPrompt({
 
           {/* Alerta de conflito */}
           {hasConflict && touched && (
-            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg flex items-start gap-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
               <TriangleAlert
-                size={18}
+                size={16}
                 className="text-amber-500 flex-shrink-0 mt-0.5"
               />
-              <div>
+              <div className="min-w-0">
                 <p className="text-amber-800 font-semibold text-sm">
                   Conflito de horário
                 </p>
-                <p className="text-amber-700 text-xs mt-0.5">
+                <p className="text-amber-700 text-xs mt-0.5 leading-relaxed">
                   O horário escolhido conflita com {conflicts.length} reunião
                   {conflicts.length !== 1 ? "ões" : ""} existente
                   {conflicts.length !== 1 ? "s" : ""}. Você ainda pode
@@ -291,22 +291,25 @@ function NewMeetingPrompt({
           <div className="flex gap-3 pt-1">
             <button
               onClick={onClose}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors"
+              className="flex-1 min-w-0 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors text-sm"
             >
               Cancelar
             </button>
             <button
               onClick={() => onConfirm(date, form)}
-              className={`flex-1 font-semibold py-3 rounded-xl transition-all shadow-md hover:shadow-lg text-white flex items-center justify-center gap-2 ${
+              className={`flex-1 min-w-0 font-semibold py-3 rounded-xl transition-all shadow-sm text-white flex items-center justify-center gap-2 text-sm ${
                 hasConflict
                   ? "bg-amber-500 hover:bg-amber-600"
                   : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
-              <Plus size={18} />
-              {hasConflict ? "Agendar mesmo assim" : "Agendar"}
+              <Plus size={16} className="flex-shrink-0" />
+              <span className="truncate">
+                {hasConflict ? "Agendar mesmo assim" : "Agendar"}
+              </span>
             </button>
           </div>
+
         </div>
       </div>
 

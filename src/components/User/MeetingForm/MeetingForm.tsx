@@ -38,7 +38,7 @@ const cls = (...classes: (string | false | null | undefined)[]) =>
   classes.filter(Boolean).join(" ");
 
 const INPUT =
-  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
+  "w-full min-w-0 px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -65,7 +65,6 @@ function CapacityBar({ current, max }: { current: number; max: number }) {
   const pct  = Math.min((current / max) * 100, 100);
   const over = current > max;
   const warn = !over && current / max > 0.8;
-
   return (
     <div className="mt-2.5 space-y-1">
       <div className="flex justify-between text-xs text-gray-400">
@@ -88,16 +87,11 @@ function CapacityBar({ current, max }: { current: number; max: number }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function MeetingForm({
-  formData,
-  modoEdicao,
-  meetingId,
-  onFormChange,
-  onSuccess,
-  onCancel,
+  formData, modoEdicao, meetingId, onFormChange, onSuccess, onCancel,
 }: MeetingFormProps) {
-  const [submitting,       setSubmitting]       = useState(false);
-  const [error,            setError]            = useState<string | null>(null);
-  const [capacityWarning,  setCapacityWarning]  = useState<string | null>(null);
+  const [submitting,      setSubmitting]      = useState(false);
+  const [error,           setError]           = useState<string | null>(null);
+  const [capacityWarning, setCapacityWarning] = useState<string | null>(null);
 
   const patch = (fields: Partial<FormData>) =>
     onFormChange({ ...formData, ...fields });
@@ -107,16 +101,13 @@ export function MeetingForm({
 
   useEffect(() => {
     if (maxCapacity !== null && formData.participants_count > maxCapacity) {
-      setCapacityWarning(
-        `"${formData.location}" comporta no máximo ${maxCapacity} participantes.`
-      );
+      setCapacityWarning(`"${formData.location}" comporta no máximo ${maxCapacity} participantes.`);
     } else {
       setCapacityWarning(null);
     }
   }, [formData.participants_count, formData.location, maxCapacity]);
 
   const selectedEquipment: string[] = formData.equipment ?? [];
-
   const toggleEquipment = (id: string) => {
     const next = selectedEquipment.includes(id)
       ? selectedEquipment.filter((e) => e !== id)
@@ -129,23 +120,16 @@ export function MeetingForm({
       "title", "meeting_date", "start_time", "end_time",
       "location", "responsible", "responsible_department",
     ];
-
-    const missing = required.some((f) => !formData[f]);
-    if (missing || !formData.participants_count) {
+    if (required.some((f) => !formData[f]) || !formData.participants_count) {
       setError("Preencha todos os campos obrigatórios (*).");
       return;
     }
-
     if (maxCapacity !== null && formData.participants_count > maxCapacity) {
-      setError(
-        `Número de participantes (${formData.participants_count}) excede a capacidade da sala (${maxCapacity}).`
-      );
+      setError(`Número de participantes excede a capacidade da sala (${maxCapacity}).`);
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       if (modoEdicao && meetingId) {
         await updateMeeting(meetingId, formData);
@@ -160,12 +144,7 @@ export function MeetingForm({
     }
   };
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    /*
-     * O formulário em si não tem overflow próprio — quem controla a rolagem
-     * é o wrapper do modal (ver comentário abaixo sobre o modal).
-     */
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden w-full">
 
       {/* ── Header ── */}
@@ -182,7 +161,7 @@ export function MeetingForm({
           onClick={onCancel}
           disabled={submitting}
           aria-label="Fechar formulário"
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-40"
+          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-40 flex-shrink-0"
         >
           <X size={20} />
         </button>
@@ -190,12 +169,9 @@ export function MeetingForm({
 
       <div className="px-4 sm:px-5 py-5 space-y-6">
 
-        {/* ── Error ── */}
+        {/* Error */}
         {error && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3"
-          >
+          <div role="alert" className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
             <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -205,7 +181,6 @@ export function MeetingForm({
         <div className="space-y-4">
           <SectionDivider title="Informações básicas" />
 
-          {/* Título */}
           <div>
             <FieldLabel text="Título *" />
             <input
@@ -219,13 +194,15 @@ export function MeetingForm({
           </div>
 
           {/*
-           * Data ocupa linha inteira no mobile.
-           * Início e Término ficam lado a lado (cada um 50%).
-           * No sm+ voltam a ser 3 colunas iguais.
+           * LAYOUT DATA/HORA — responsivo para qualquer tela:
+           *
+           * Mobile  (<640px): Data = linha inteira (col-span-2)
+           *                   Início | Término lado a lado (col-span-1 cada)
+           *
+           * Desktop (≥640px): Data | Início | Término — 3 colunas iguais
            */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {/* Data — full width no mobile */}
-            <div className="col-span-2 sm:col-span-1">
+            <div className="col-span-2 sm:col-span-1 min-w-0">
               <FieldLabel text="Data *" />
               <input
                 type="date"
@@ -235,9 +212,7 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-
-            {/* Início */}
-            <div className="col-span-1">
+            <div className="col-span-1 min-w-0">
               <FieldLabel text="Início *" />
               <input
                 type="time"
@@ -247,9 +222,7 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-
-            {/* Término */}
-            <div className="col-span-1">
+            <div className="col-span-1 min-w-0">
               <FieldLabel text="Término *" />
               <input
                 type="time"
@@ -305,7 +278,6 @@ export function MeetingForm({
 
           <div>
             <FieldLabel text="Equipamentos" />
-            {/* wrap garante que no mobile os chips quebrem linha sem sair do container */}
             <div className="flex flex-wrap gap-2">
               {EQUIPMENT_OPTIONS.map(({ id, label, icon: Icon }) => {
                 const active = selectedEquipment.includes(id);
@@ -327,7 +299,7 @@ export function MeetingForm({
                     {label}
                     <span
                       className={cls(
-                        "w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors",
+                        "w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors flex-shrink-0",
                         active ? "border-blue-500 bg-blue-500 text-white" : "border-gray-300"
                       )}
                     >
@@ -355,7 +327,6 @@ export function MeetingForm({
         {/* ── Participantes ── */}
         <div className="space-y-4">
           <SectionDivider title="Participantes" />
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <FieldLabel text="Quantidade *" />
@@ -379,7 +350,6 @@ export function MeetingForm({
                 </p>
               )}
             </div>
-
             <div>
               <FieldLabel text="Responsável *" />
               <input
@@ -391,7 +361,6 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-
             <div>
               <FieldLabel text="Departamento *" />
               <input
@@ -449,10 +418,7 @@ export function MeetingForm({
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
 function RoomInfoItem({
-  icon,
-  label,
-  value,
-  positive,
+  icon, label, value, positive,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -465,31 +431,21 @@ function RoomInfoItem({
         {icon}
         <span className="text-xs text-gray-400">{label}</span>
       </div>
-      <span
-        className={cls(
-          "text-xs font-semibold",
-          positive === undefined
-            ? "text-slate-700"
-            : positive
-            ? "text-emerald-600"
-            : "text-gray-400"
-        )}
-      >
+      <span className={cls(
+        "text-xs font-semibold",
+        positive === undefined ? "text-slate-700" : positive ? "text-emerald-600" : "text-gray-400"
+      )}>
         {value}
       </span>
     </div>
   );
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
-// MODAL WRAPPER — use este wrapper ao redor do <MeetingForm /> no seu modal.
-// Ele garante rolagem correta no iPhone 13 Pro e evita que o form saia da tela.
-//
-// Uso:
-//   <MeetingFormModal open={open} onClose={() => setOpen(false)}>
-//     <MeetingForm ... />
-//   </MeetingFormModal>
+// MODAL WRAPPER
+// Uso: <MeetingFormModal open={open} onClose={() => setOpen(false)}>
+//        <MeetingForm ... />
+//      </MeetingFormModal>
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface MeetingFormModalProps {
@@ -500,28 +456,24 @@ interface MeetingFormModalProps {
 
 export function MeetingFormModal({ open, onClose, children }: MeetingFormModalProps) {
   if (!open) return null;
-
   return (
-    /*
-     * Backdrop: fixed + inset-0 cobre toda a tela.
-     * overflow-y-auto no backdrop permite rolar o conteúdo se for maior que a viewport.
-     * py-4 + px-4 dão respiro lateral no iPhone (390 px de largura).
-     */
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto px-4 py-6"
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
       {/*
-       * max-w-lg limita a largura no desktop.
-       * w-full garante que no mobile o card use quase toda a tela.
-       * my-auto centraliza verticalmente quando o conteúdo é menor que a viewport.
-       * onClick stopPropagation evita fechar ao clicar dentro do card.
+       * flex min-h-full items-start sm:items-center:
+       *   → mobile:  alinha ao topo (form grande não fica cortado)
+       *   → desktop: centraliza verticalmente
+       * px-4 py-6: respiro lateral/vertical em qualquer tela
        */}
-      <div
-        className="relative w-full max-w-lg my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
+      <div className="flex min-h-full items-start sm:items-center justify-center px-4 py-6">
+        <div
+          className="w-full max-w-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
