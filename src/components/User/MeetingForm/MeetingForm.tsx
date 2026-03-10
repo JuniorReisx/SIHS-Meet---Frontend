@@ -11,9 +11,9 @@ const ROOM_CONFIG: Record<string, { capacity: number; hasService: boolean; hasCo
 };
 
 const EQUIPMENT_OPTIONS = [
-  { id: "projetor", label: "Projetor",         icon: Monitor },
-  { id: "tv",       label: "TV",               icon: Tv      },
-  { id: "som",      label: "Sistema de Som",   icon: Volume2 },
+  { id: "projetor", label: "Projetor",       icon: Monitor },
+  { id: "tv",       label: "TV",             icon: Tv      },
+  { id: "som",      label: "Sistema de Som", icon: Volume2 },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -61,14 +61,8 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
-function CapacityBar({
-  current,
-  max,
-}: {
-  current: number;
-  max: number;
-}) {
-  const pct = Math.min((current / max) * 100, 100);
+function CapacityBar({ current, max }: { current: number; max: number }) {
+  const pct  = Math.min((current / max) * 100, 100);
   const over = current > max;
   const warn = !over && current / max > 0.8;
 
@@ -101,14 +95,13 @@ export function MeetingForm({
   onSuccess,
   onCancel,
 }: MeetingFormProps) {
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [capacityWarning, setCapacityWarning] = useState<string | null>(null);
+  const [submitting,       setSubmitting]       = useState(false);
+  const [error,            setError]            = useState<string | null>(null);
+  const [capacityWarning,  setCapacityWarning]  = useState<string | null>(null);
 
   const patch = (fields: Partial<FormData>) =>
     onFormChange({ ...formData, ...fields });
 
-  // ── Room info ──────────────────────────────────────────────────────────────
   const roomConfig  = formData.location ? ROOM_CONFIG[formData.location] : null;
   const maxCapacity = roomConfig?.capacity ?? null;
 
@@ -122,7 +115,6 @@ export function MeetingForm({
     }
   }, [formData.participants_count, formData.location, maxCapacity]);
 
-  // ── Equipment ──────────────────────────────────────────────────────────────
   const selectedEquipment: string[] = formData.equipment ?? [];
 
   const toggleEquipment = (id: string) => {
@@ -132,7 +124,6 @@ export function MeetingForm({
     patch({ equipment: next });
   };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     const required: (keyof FormData)[] = [
       "title", "meeting_date", "start_time", "end_time",
@@ -171,15 +162,19 @@ export function MeetingForm({
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    /*
+     * O formulário em si não tem overflow próprio — quem controla a rolagem
+     * é o wrapper do modal (ver comentário abaixo sobre o modal).
+     */
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden w-full">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
         <div>
           <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-0.5">
             {modoEdicao ? "Editar" : "Novo agendamento"}
           </p>
-          <h2 className="text-lg font-bold text-gray-800 leading-tight">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800 leading-tight">
             {modoEdicao ? "Editar Reunião" : "Agendar Reunião"}
           </h2>
         </div>
@@ -193,7 +188,7 @@ export function MeetingForm({
         </button>
       </div>
 
-      <div className="px-5 py-6 space-y-6">
+      <div className="px-4 sm:px-5 py-5 space-y-6">
 
         {/* ── Error ── */}
         {error && (
@@ -223,9 +218,14 @@ export function MeetingForm({
             />
           </div>
 
-          {/* Data + Início + Término — empilha no mobile, 3 colunas no md */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
+          {/*
+           * Data ocupa linha inteira no mobile.
+           * Início e Término ficam lado a lado (cada um 50%).
+           * No sm+ voltam a ser 3 colunas iguais.
+           */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {/* Data — full width no mobile */}
+            <div className="col-span-2 sm:col-span-1">
               <FieldLabel text="Data *" />
               <input
                 type="date"
@@ -235,7 +235,9 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-            <div>
+
+            {/* Início */}
+            <div className="col-span-1">
               <FieldLabel text="Início *" />
               <input
                 type="time"
@@ -245,7 +247,9 @@ export function MeetingForm({
                 disabled={submitting}
               />
             </div>
-            <div>
+
+            {/* Término */}
+            <div className="col-span-1">
               <FieldLabel text="Término *" />
               <input
                 type="time"
@@ -262,7 +266,6 @@ export function MeetingForm({
         <div className="space-y-4">
           <SectionDivider title="Sala e recursos" />
 
-          {/* Local */}
           <div>
             <FieldLabel text="Local *" />
             <select
@@ -278,7 +281,6 @@ export function MeetingForm({
             </select>
           </div>
 
-          {/* Card de info da sala */}
           {roomConfig && (
             <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
               <RoomInfoItem
@@ -301,9 +303,9 @@ export function MeetingForm({
             </div>
           )}
 
-          {/* Equipamentos */}
           <div>
             <FieldLabel text="Equipamentos" />
+            {/* wrap garante que no mobile os chips quebrem linha sem sair do container */}
             <div className="flex flex-wrap gap-2">
               {EQUIPMENT_OPTIONS.map(({ id, label, icon: Icon }) => {
                 const active = selectedEquipment.includes(id);
@@ -337,7 +339,6 @@ export function MeetingForm({
             </div>
           </div>
 
-          {/* Outros equipamentos */}
           <div>
             <FieldLabel text="Outros equipamentos" />
             <input
@@ -356,7 +357,6 @@ export function MeetingForm({
           <SectionDivider title="Participantes" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Quantidade */}
             <div className="sm:col-span-2">
               <FieldLabel text="Quantidade *" />
               <input
@@ -369,11 +369,9 @@ export function MeetingForm({
                 placeholder="Ex: 10"
                 disabled={submitting}
               />
-
               {maxCapacity !== null && formData.participants_count > 0 && (
                 <CapacityBar current={formData.participants_count} max={maxCapacity} />
               )}
-
               {capacityWarning && (
                 <p className="mt-2 text-xs text-red-600 flex items-center gap-1.5">
                   <AlertCircle size={13} />
@@ -382,7 +380,6 @@ export function MeetingForm({
               )}
             </div>
 
-            {/* Responsável */}
             <div>
               <FieldLabel text="Responsável *" />
               <input
@@ -395,7 +392,6 @@ export function MeetingForm({
               />
             </div>
 
-            {/* Departamento */}
             <div>
               <FieldLabel text="Departamento *" />
               <input
@@ -410,7 +406,7 @@ export function MeetingForm({
           </div>
         </div>
 
-        {/* ── Descrição ── */}
+        {/* ── Pauta ── */}
         <div className="space-y-4">
           <SectionDivider title="Pauta / Descrição" />
           <textarea
@@ -424,7 +420,7 @@ export function MeetingForm({
         </div>
 
         {/* ── Actions ── */}
-        <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2 pb-1">
           <button
             onClick={onCancel}
             disabled={submitting}
@@ -435,7 +431,7 @@ export function MeetingForm({
           <button
             onClick={handleSubmit}
             disabled={submitting || !!capacityWarning}
-            className="w-full sm:w-auto flex-1 sm:flex-none px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <><Loader2 size={16} className="animate-spin" /> Salvando...</>
@@ -481,6 +477,52 @@ function RoomInfoItem({
       >
         {value}
       </span>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL WRAPPER — use este wrapper ao redor do <MeetingForm /> no seu modal.
+// Ele garante rolagem correta no iPhone 13 Pro e evita que o form saia da tela.
+//
+// Uso:
+//   <MeetingFormModal open={open} onClose={() => setOpen(false)}>
+//     <MeetingForm ... />
+//   </MeetingFormModal>
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface MeetingFormModalProps {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+export function MeetingFormModal({ open, onClose, children }: MeetingFormModalProps) {
+  if (!open) return null;
+
+  return (
+    /*
+     * Backdrop: fixed + inset-0 cobre toda a tela.
+     * overflow-y-auto no backdrop permite rolar o conteúdo se for maior que a viewport.
+     * py-4 + px-4 dão respiro lateral no iPhone (390 px de largura).
+     */
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto px-4 py-6"
+      onClick={onClose}
+    >
+      {/*
+       * max-w-lg limita a largura no desktop.
+       * w-full garante que no mobile o card use quase toda a tela.
+       * my-auto centraliza verticalmente quando o conteúdo é menor que a viewport.
+       * onClick stopPropagation evita fechar ao clicar dentro do card.
+       */}
+      <div
+        className="relative w-full max-w-lg my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </div>
   );
 }
