@@ -1,4 +1,3 @@
-
 interface Meeting {
   id: number;
   title: string;
@@ -10,7 +9,7 @@ interface Meeting {
   description: string;
   responsible: string;
   responsible_department: string;
-  status?: 'confirmed' | 'pending' | 'denied';
+  status?: "confirmed" | "pending" | "denied";
 }
 
 interface MeetingCardProps {
@@ -20,19 +19,19 @@ interface MeetingCardProps {
 export function MeetingCard({ meeting }: MeetingCardProps) {
   const getStatusBadge = (status?: string) => {
     switch (status) {
-      case 'confirmed':
+      case "confirmed":
         return (
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
             Confirmada
           </span>
         );
-      case 'pending':
+      case "pending":
         return (
           <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
             Pendente
           </span>
         );
-      case 'denied':
+      case "denied":
         return (
           <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
             Negada
@@ -49,7 +48,7 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('pt-BR');
+      return new Date(dateString + "T00:00:00").toLocaleDateString("pt-BR");
     } catch {
       return dateString;
     }
@@ -63,36 +62,35 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
         </h3>
         {getStatusBadge(meeting.status)}
       </div>
-      
+
       <div className="space-y-2 text-sm text-gray-600">
         <p>
-          <strong className="text-gray-700">Data:</strong>{' '}
+          <strong className="text-gray-700">Data:</strong>{" "}
           {formatDate(meeting.meeting_date)}
         </p>
         <p>
-          <strong className="text-gray-700">Horário:</strong>{' '}
+          <strong className="text-gray-700">Horário:</strong>{" "}
           {meeting.start_time}
           {meeting.end_time && ` - ${meeting.end_time}`}
         </p>
         <p>
-          <strong className="text-gray-700">Local:</strong>{' '}
-          {meeting.location}
+          <strong className="text-gray-700">Local:</strong> {meeting.location}
         </p>
         <p>
-          <strong className="text-gray-700">Participantes:</strong>{' '}
+          <strong className="text-gray-700">Participantes:</strong>{" "}
           {meeting.participants_count}
         </p>
         <p>
-          <strong className="text-gray-700">Responsável:</strong>{' '}
+          <strong className="text-gray-700">Responsável:</strong>{" "}
           {meeting.responsible}
         </p>
         <p>
-          <strong className="text-gray-700">Departamento:</strong>{' '}
+          <strong className="text-gray-700">Departamento:</strong>{" "}
           {meeting.responsible_department}
         </p>
         {meeting.description && (
           <p className="pt-2 border-t border-gray-200">
-            <strong className="text-gray-700">Descrição:</strong>{' '}
+            <strong className="text-gray-700">Descrição:</strong>{" "}
             <span className="text-gray-600">{meeting.description}</span>
           </p>
         )}
