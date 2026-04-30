@@ -57,7 +57,6 @@ const NETWORK_ERROR   = "Você errou o usuário ou a senha.";
 function isNetworkError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   const msg = err.message.toLowerCase();
-  // "Load failed", "Failed to fetch", "NetworkError", "net::ERR_*"
   return (
     msg.includes("load failed") ||
     msg.includes("failed to fetch") ||
@@ -81,8 +80,6 @@ async function postLogin(
       body: JSON.stringify({ username, password }),
     });
   } catch {
-    // Erro de rede real (sem conexão, CORS, timeout, etc.)
-    // Relançamos com flag para distinguir de erro de credencial
     const e = new Error(NETWORK_ERROR);
     (e as Error & { isNetwork: boolean }).isNetwork = true;
     throw e;
@@ -95,7 +92,6 @@ async function postLogin(
       serverMessage = errorData?.message;
     } catch { /* sem corpo JSON */ }
 
-    // 401 / 403 → mensagem de credencial, não de rede
     const friendlyMsg =
       response.status === 401 || response.status === 403
         ? "Você errou o usuário ou a senha."
@@ -119,21 +115,15 @@ async function authenticate(
     return postLogin(ENDPOINTS.admin, username, password);
   }
 
-  // Tenta /users primeiro, depois /ldap como fallback
-  // Se os DOIS falharem por credencial → mostra mensagem de credencial
-  // Se os DOIS falharem por rede → mostra mensagem de rede (mas não trava)
   try {
     return await postLogin(ENDPOINTS.user, username, password);
   } catch (userErr) {
-    // Se o erro do /users foi de credencial (não de rede), não tenta LDAP
     if (!(userErr as Error & { isNetwork?: boolean }).isNetwork) {
       throw userErr;
     }
-    // Só tenta LDAP se /users teve erro de rede (usuário LDAP)
     try {
       return await postLogin(ENDPOINTS.ldap, username, password);
     } catch {
-      // LDAP também falhou — mostra mensagem de credencial de qualquer forma
       throw new Error("Você errou o usuário ou a senha.");
     }
   }
@@ -198,12 +188,9 @@ export default function Login() {
       setLoginData(data);
       setModalOpen(true);
     } catch (err) {
-      // Garante que o loading sempre para, mesmo com erros inesperados
       const message = err instanceof Error ? err.message : DEFAULT_ERROR;
-      // Erros de rede brutos que escaparam → normaliza para mensagem amigável
       setError(isNetworkError(err) ? NETWORK_ERROR : message);
     } finally {
-      // finally SEMPRE executa — resolve o problema de "trava" após o erro
       setLoading(false);
     }
   };
@@ -214,11 +201,14 @@ export default function Login() {
 
   const handleConfirmLogin = () => {
     if (!loginData) return;
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userRole",        tipoLogin);
-    localStorage.setItem("username",        usuario);
-    if (loginData.token) localStorage.setItem("authToken", loginData.token);
-    if (loginData.user)  localStorage.setItem("userData",  JSON.stringify(loginData.user));
+
+    // ✅ sessionStorage: apaga automaticamente ao fechar o navegador/aba
+    sessionStorage.setItem("isAuthenticated", "true");
+    sessionStorage.setItem("userRole",        tipoLogin);
+    sessionStorage.setItem("username",        usuario);
+    if (loginData.token) sessionStorage.setItem("authToken", loginData.token);
+    if (loginData.user)  sessionStorage.setItem("userData",  JSON.stringify(loginData.user));
+
     navigate(ROUTES[tipoLogin]);
   };
 

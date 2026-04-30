@@ -6,8 +6,9 @@ import { ReportsPage } from "../pages/Home/ReportsPageAdmin";
 
 // Componente de Rota Protegida
 function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode, requiredRole?: string }) {
-  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-  const userRole = localStorage.getItem("userRole");
+  // ✅ sessionStorage: apaga ao fechar o navegador/aba
+  const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
+  const userRole = sessionStorage.getItem("userRole");
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
