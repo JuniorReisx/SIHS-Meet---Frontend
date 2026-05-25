@@ -1,20 +1,6 @@
 import { XCircle } from "lucide-react";
 import { DeniedMeetingCard } from "./MeetingCard";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Meeting {
-  id: number;
-  title: string;
-  meeting_date: string;
-  start_time: string;
-  end_time?: string;
-  location: string;
-  participants_count: number;
-  description: string;
-  responsible: string;
-  responsible_department: string;
-}
+import type { Meeting } from "../../../../types/types";
 
 interface MeetingsListProps {
   meetings: Meeting[];

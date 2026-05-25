@@ -1,21 +1,7 @@
 import { Calendar, Clock, MapPin, Users, User, Building2, X, Check, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { API_URL } from "../../../../config/api";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Meeting {
-  id: number;
-  title: string;
-  meeting_date: string;
-  start_time: string;
-  end_time?: string;
-  location: string;
-  participants_count: number;
-  description: string;
-  responsible: string;
-  responsible_department: string;
-}
+import type { Meeting } from "../../../../types/types";
 
 interface Props {
   meeting: Meeting;
