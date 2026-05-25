@@ -20,7 +20,7 @@ import { HistoricoMeetingsList } from "../../components/Admin/Meetings/Historico
 import { MeetingForm } from "../../components/User/MeetingForm/MeetingForm";
 import { API_URL } from "../../config/api";
 import { MeetingCalendar } from "../../components/User/ScheduledMeetings/Calendar";
-import type { Meeting as MeetingType } from "../../types/types";
+import type { Meeting, TabType } from "../../types/types";
 import { FooterAdmin } from "../../components/Admin/Footer/FooterAdmin";
 import { LoadingScreen } from "../../components/layout/LoadingScreen";
 import { cn } from "../../lib/cn";
@@ -29,23 +29,8 @@ import {
   filterPastMeetings,
   sortMeetingsByDateDesc,
 } from "../../lib/meetingDates";
-import type { TabType } from "../../types/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Meeting {
-  id: number;
-  title: string;
-  meeting_date: string;
-  start_time: string;
-  end_time?: string;
-  location: string;
-  participants_count: number;
-  description: string;
-  responsible: string;
-  responsible_department: string;
-  status?: "confirmed" | "pending" | "denied";
-}
 
 interface Statistics {
   total: number;
@@ -67,7 +52,7 @@ type FilterType =
   | "custom"
   | "month";
 
-type FormData = Omit<MeetingType, "id">;
+type FormData = Omit<Meeting, "id">;
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 

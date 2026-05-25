@@ -1,19 +1,6 @@
 import { List } from 'lucide-react';
 import { MeetingCard } from './MeetingCard';
-
-interface Meeting {
-  id: number;
-  title: string;
-  meeting_date: string;
-  start_time: string;
-  end_time?: string;
-  location: string;
-  participants_count: number;
-  description: string;
-  responsible: string;
-  responsible_department: string;
-  status?: 'confirmed' | 'pending' | 'denied';
-}
+import type { Meeting } from '../../../../types/types';
 
 interface MeetingsListProps {
   meetings: Meeting[];

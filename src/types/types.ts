@@ -28,9 +28,10 @@ export interface Meeting {
   end_time?: string;
   location: string;
   participants_count: number;
-  MeetingCalendar: string;
   responsible: string;
   responsible_department: string;
+  MeetingCalendar?: string;
+  description?: string;
   status?: 'confirmed' | 'pending' | 'denied';
 }
 
