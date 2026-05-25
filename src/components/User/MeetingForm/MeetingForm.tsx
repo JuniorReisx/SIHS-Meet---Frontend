@@ -5,6 +5,8 @@ import {
 import { useState, useEffect } from "react";
 import { createMeeting, updateMeeting, getAllMeetings } from "../../../services/meetingService";
 import type { Meeting } from "../../../types/types";
+import { cn } from "../../../lib/cn";
+import { roleTheme, type AppRole } from "../../../theme/variants";
 
 // ─── Configurações ────────────────────────────────────────────────────────────
 
@@ -30,6 +32,7 @@ interface MeetingFormProps {
   formData: FormData;
   modoEdicao: boolean;
   meetingId?: number;
+  role?: AppRole;
   onFormChange: (data: FormData) => void;
   onSuccess: () => void;
   onCancel: () => void;
@@ -37,11 +40,6 @@ interface MeetingFormProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const cls = (...classes: (string | false | null | undefined)[]) =>
-  classes.filter(Boolean).join(" ");
-
-const INPUT =
-  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
 
 // Converte "HH:MM" ou "HH:MM:SS" em minutos desde meia-noite
 function toMinutes(time: string): number {
@@ -83,11 +81,7 @@ function findRoomConflict(
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function FieldLabel({ text }: { text: string }) {
-  return (
-    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-      {text}
-    </label>
-  );
+  return <label className="label">{text}</label>;
 }
 
 function SectionDivider({ title }: { title: string }) {
@@ -113,9 +107,9 @@ function CapacityBar({ current, max }: { current: number; max: number }) {
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className={cls(
+          className={cn(
             "h-full rounded-full transition-all duration-300",
-            over ? "bg-red-500" : warn ? "bg-amber-400" : "bg-emerald-500"
+            over ? "bg-red-500" : warn ? "bg-amber-400" : "bg-emerald-500",
           )}
           style={{ width: `${pct}%` }}
         />
@@ -127,8 +121,10 @@ function CapacityBar({ current, max }: { current: number; max: number }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function MeetingForm({
-  formData, modoEdicao, meetingId, onFormChange, onSuccess, onCancel,
+  formData, modoEdicao, meetingId, role = "user", onFormChange, onSuccess, onCancel,
 }: MeetingFormProps) {
+  const theme = roleTheme[role];
+  const inputClass = cn("input", theme.inputFocus);
   const [submitting,      setSubmitting]      = useState(false);
   const [error,           setError]           = useState<string | null>(null);
   const [capacityWarning, setCapacityWarning] = useState<string | null>(null);
@@ -222,15 +218,14 @@ export function MeetingForm({
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden w-full">
+    <div className="card overflow-hidden w-full animate-slide-up">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-surface-border bg-slate-50/80 sticky top-0 z-10">
         <div>
-          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-0.5">
+          <p className={cn("text-xs font-bold uppercase tracking-widest mb-0.5", theme.iconColor)}>
             {modoEdicao ? "Editar" : "Novo agendamento"}
           </p>
-          <h2 className="text-base sm:text-lg font-bold text-gray-800 leading-tight">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
             {modoEdicao ? "Editar Reunião" : "Agendar Reunião"}
           </h2>
         </div>
@@ -238,7 +233,7 @@ export function MeetingForm({
           onClick={onCancel}
           disabled={submitting}
           aria-label="Fechar formulário"
-          className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-40 flex-shrink-0"
+          className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-40 flex-shrink-0"
         >
           <X size={20} />
         </button>
@@ -248,7 +243,7 @@ export function MeetingForm({
 
         {/* Error */}
         {error && (
-          <div role="alert" className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+          <div role="alert" className="alert-error">
             <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -264,7 +259,7 @@ export function MeetingForm({
               type="text"
               value={formData.title}
               onChange={(e) => patch({ title: e.target.value })}
-              className={INPUT}
+              className={inputClass}
               placeholder="Ex: Reunião de Planejamento Trimestral"
               disabled={submitting}
             />
@@ -277,7 +272,7 @@ export function MeetingForm({
                 type="date"
                 value={formData.meeting_date}
                 onChange={(e) => patch({ meeting_date: e.target.value })}
-                className={INPUT}
+                className={inputClass}
                 disabled={submitting}
               />
             </div>
@@ -287,7 +282,7 @@ export function MeetingForm({
                 type="time"
                 value={formData.start_time}
                 onChange={(e) => patch({ start_time: e.target.value })}
-                className={INPUT}
+                className={inputClass}
                 disabled={submitting}
               />
             </div>
@@ -297,7 +292,7 @@ export function MeetingForm({
                 type="time"
                 value={formData.end_time || ""}
                 onChange={(e) => patch({ end_time: e.target.value })}
-                className={INPUT}
+                className={inputClass}
                 disabled={submitting}
               />
             </div>
@@ -313,7 +308,7 @@ export function MeetingForm({
             <select
               value={formData.location}
               onChange={(e) => patch({ location: e.target.value })}
-              className={INPUT}
+              className={inputClass}
               disabled={submitting}
             >
               <option value="">Selecione um local</option>
@@ -324,7 +319,7 @@ export function MeetingForm({
           </div>
 
           {roomConfig && (
-            <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-surface-border rounded-xl p-3">
               <RoomInfoItem
                 icon={<Info size={14} className="text-blue-500" />}
                 label="Capacidade"
@@ -356,20 +351,28 @@ export function MeetingForm({
                     type="button"
                     onClick={() => toggleEquipment(id)}
                     disabled={submitting}
-                    className={cls(
-                      "flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all",
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all",
                       active
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300",
-                      "disabled:opacity-50 disabled:cursor-not-allowed"
+                        ? role === "admin"
+                          ? "border-accent-500 bg-accent-50 text-accent-700"
+                          : "border-brand-500 bg-brand-50 text-brand-700"
+                        : "border-surface-border bg-white text-slate-600 hover:border-slate-300",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
                     )}
                   >
                     <Icon size={14} />
                     {label}
-                    <span className={cls(
-                      "w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors flex-shrink-0",
-                      active ? "border-blue-500 bg-blue-500 text-white" : "border-gray-300"
-                    )}>
+                    <span
+                      className={cn(
+                        "w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] font-bold transition-colors flex-shrink-0",
+                        active
+                          ? role === "admin"
+                            ? "border-accent-500 bg-accent-500 text-white"
+                            : "border-brand-500 bg-brand-500 text-white"
+                          : "border-slate-300",
+                      )}
+                    >
                       {active && "✓"}
                     </span>
                   </button>
@@ -384,7 +387,7 @@ export function MeetingForm({
               type="text"
               value={formData.other_equipment || ""}
               onChange={(e) => patch({ other_equipment: e.target.value })}
-              className={INPUT}
+              className={inputClass}
               placeholder="Descreva outros equipamentos necessários..."
               disabled={submitting}
             />
@@ -403,7 +406,10 @@ export function MeetingForm({
                 max={maxCapacity ?? undefined}
                 value={formData.participants_count || ""}
                 onChange={(e) => patch({ participants_count: parseInt(e.target.value) || 0 })}
-                className={cls(INPUT, capacityWarning ? "border-red-400 focus:border-red-500 focus:ring-red-100" : "")}
+                className={cn(
+                  inputClass,
+                  capacityWarning && "!border-red-400 focus:!border-red-500 focus:shadow-[0_0_0_3px_rgb(239_68_68/0.15)]",
+                )}
                 placeholder="Ex: 10"
                 disabled={submitting}
               />
@@ -423,7 +429,7 @@ export function MeetingForm({
                 type="text"
                 value={formData.responsible}
                 onChange={(e) => patch({ responsible: e.target.value })}
-                className={INPUT}
+                className={inputClass}
                 placeholder="Ex: João Silva"
                 disabled={submitting}
               />
@@ -434,7 +440,7 @@ export function MeetingForm({
                 type="text"
                 value={formData.responsible_department}
                 onChange={(e) => patch({ responsible_department: e.target.value })}
-                className={INPUT}
+                className={inputClass}
                 placeholder="Ex: Recursos Humanos"
                 disabled={submitting}
               />
@@ -449,7 +455,7 @@ export function MeetingForm({
             value={formData.MeetingCalendar || ""}
             onChange={(e) => patch({ MeetingCalendar: e.target.value })}
             rows={3}
-            className={cls(INPUT, "resize-none")}
+            className={cn(inputClass, "resize-none")}
             placeholder="Descreva a pauta e objetivos da reunião..."
             disabled={submitting}
           />
@@ -457,17 +463,13 @@ export function MeetingForm({
 
         {/* ── Actions ── */}
         <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2 pb-1">
-          <button
-            onClick={onCancel}
-            disabled={submitting}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <button onClick={onCancel} disabled={submitting} className="btn-secondary w-full sm:w-auto">
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting || !!capacityWarning}
-            className="w-full sm:flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={cn("w-full sm:flex-1", theme.btnPrimary)}
           >
             {submitting ? (
               <><Loader2 size={16} className="animate-spin" /> Verificando...</>
@@ -498,10 +500,12 @@ function RoomInfoItem({
         {icon}
         <span className="text-xs text-gray-400">{label}</span>
       </div>
-      <span className={cls(
-        "text-xs font-semibold",
-        positive === undefined ? "text-slate-700" : positive ? "text-emerald-600" : "text-gray-400"
-      )}>
+      <span
+        className={cn(
+          "text-xs font-semibold",
+          positive === undefined ? "text-slate-700" : positive ? "text-emerald-600" : "text-slate-400",
+        )}
+      >
         {value}
       </span>
     </div>
@@ -520,7 +524,7 @@ export function MeetingFormModal({ open, onClose, children }: MeetingFormModalPr
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm overflow-y-auto"
+      className="modal-overlay overflow-y-auto"
       onClick={onClose}
     >
       <div className="flex min-h-full items-start sm:items-center justify-center px-4 py-6">

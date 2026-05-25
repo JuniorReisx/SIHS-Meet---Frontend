@@ -25,8 +25,7 @@ interface Props {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const cls = (...c: (string | false | null | undefined)[]) =>
-  c.filter(Boolean).join(" ");
+import { cn } from "../../../../lib/cn";
 
 function formatDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-");
@@ -51,12 +50,12 @@ function InfoChip({
   full?: boolean;
 }) {
   return (
-    <div className={cls("bg-gray-50 rounded-lg px-3 py-2", full && "col-span-2")}>
+    <div className={cn("info-chip", full && "col-span-2")}>
       <div className="flex items-center gap-1 mb-0.5">
         {icon}
-        <p className="text-xs text-gray-400 font-medium">{label}</p>
+        <p className="text-xs text-slate-400 font-medium">{label}</p>
       </div>
-      <p className="text-sm font-semibold text-gray-700 truncate">{value}</p>
+      <p className="text-sm font-semibold text-slate-700 truncate">{value}</p>
     </div>
   );
 }
@@ -115,21 +114,19 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
   const busy = loading !== null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      {/* Status stripe */}
-      <div className="h-0.5 bg-amber-400" />
+    <div className="card-interactive overflow-hidden">
+      <div className="status-stripe-pending" />
 
       <div className="p-5">
-        {/* Top row */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mb-1">
+            <span className="badge-pending mb-2">
               <Clock size={11} />
               Pendente
             </span>
-            <h3 className="text-base font-bold text-gray-800 truncate">{meeting.title}</h3>
+            <h3 className="text-base font-bold text-slate-900 truncate">{meeting.title}</h3>
           </div>
-          <span className="flex-shrink-0 flex items-center gap-1 text-xs text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
+          <span className="flex-shrink-0 flex items-center gap-1 text-xs text-slate-500 bg-slate-50 border border-surface-border px-2.5 py-1 rounded-full">
             <Users size={11} />
             {meeting.participants_count}
           </span>
@@ -137,7 +134,7 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
 
         {/* Error */}
         {error && (
-          <div role="alert" className="mb-3 flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <div role="alert" className="alert-error mb-3 text-xs">
             <AlertCircle size={13} /> {error}
           </div>
         )}
@@ -151,13 +148,13 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
 
         {/* Expanded details */}
         {expanded && (
-          <div className="mt-2 pt-3 border-t border-gray-100 space-y-2 mb-2">
+          <div className="mt-2 pt-3 border-t border-surface-border space-y-2 mb-2">
             <InfoChip icon={<User size={13} className="text-orange-500" />}     label="Responsável"  value={meeting.responsible}           full />
             <InfoChip icon={<Building2 size={13} className="text-gray-400" />}  label="Departamento" value={meeting.responsible_department} full />
             {meeting.description && (
-              <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Descrição</p>
-                <p className="text-sm text-gray-700 leading-relaxed">{meeting.description}</p>
+              <div className="info-chip">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Descrição</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{meeting.description}</p>
               </div>
             )}
           </div>
@@ -166,18 +163,18 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
         {/* Toggle */}
         <button
           onClick={() => setExpanded((p) => !p)}
-          className="w-full flex items-center justify-center gap-1 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors"
+          className="w-full flex items-center justify-center gap-1 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors"
         >
-          <ChevronDown size={14} className={cls("transition-transform duration-200", expanded && "rotate-180")} />
+          <ChevronDown size={14} className={cn("transition-transform duration-200", expanded && "rotate-180")} />
           {expanded ? "Ocultar detalhes" : "Ver detalhes"}
         </button>
 
         {/* Actions */}
-        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex gap-2 mt-3 pt-3 border-t border-surface-border">
           <button
             onClick={handleDeny}
             disabled={busy}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 border border-gray-200 bg-white hover:bg-red-50 hover:border-red-300 text-gray-600 hover:text-red-600 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-secondary flex-1 hover:!text-red-600 hover:!bg-red-50 hover:!border-red-200"
           >
             {loading === "deny"
               ? <Loader2 size={14} className="animate-spin" />
@@ -187,7 +184,7 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
           <button
             onClick={handleApprove}
             disabled={busy}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus-visible:ring-emerald-500"
           >
             {loading === "approve"
               ? <Loader2 size={14} className="animate-spin" />

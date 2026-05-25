@@ -24,11 +24,8 @@ type ViewMode = "summary" | "charts" | "detailed";
 
 // ─── Helpers de estilo ────────────────────────────────────────────────────────
 
-const SELECT =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 transition-all";
-
-const INPUT =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-50 transition-all";
+const SELECT = "input input-accent";
+const INPUT = "input input-accent";
 
 const STAT_CARDS = [
   { key: "total",             label: "Total de Reuniões",   icon: Calendar,    color: "text-blue-600",   bg: "bg-blue-50",   border: "border-blue-100"   },
@@ -159,22 +156,23 @@ export function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto" />
-          <p className="mt-3 text-sm text-gray-500">Carregando relatórios...</p>
+      <div className="page-shell-admin min-h-screen flex flex-col">
+        <HeaderAdmin />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center animate-fade-in">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-accent-200 border-t-accent-600 mx-auto" />
+            <p className="mt-4 text-sm text-slate-500 font-medium">Carregando relatórios...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-shell-admin flex flex-col min-h-screen">
       <HeaderAdmin />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="page-container flex-1">
 
         {/* ── Cabeçalho da página ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -183,7 +181,7 @@ export function ReportsPage() {
             {/* Voltar */}
             <Link
               to="/ScheduledMeetingsADMIN"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 text-sm font-medium transition-all shadow-sm flex-shrink-0"
+              className="btn-secondary flex-shrink-0"
             >
               <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" />
               <span className="hidden sm:inline">Voltar ao Painel</span>
@@ -193,8 +191,8 @@ export function ReportsPage() {
             {/* Título */}
             <div>
               <div className="flex items-center gap-2">
-                <FileText size={18} className="text-purple-600 flex-shrink-0" />
-                <h1 className="text-base sm:text-xl font-bold text-gray-800 leading-tight">
+                <FileText size={18} className="text-accent-600 flex-shrink-0" />
+                <h1 className="section-title text-base sm:text-xl leading-tight">
                   <span className="hidden sm:inline">Relatórios de Reuniões</span>
                   <span className="sm:hidden">Relatórios</span>
                 </h1>

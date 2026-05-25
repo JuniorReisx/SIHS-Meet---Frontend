@@ -43,7 +43,7 @@ export interface Statistics {
   past: number;
 }
 
-export type TabType = "total" | "confirmed" | "pending" | "denied";
+export type TabType = "total" | "confirmed" | "pending" | "denied" | "historico";
 
 export type FilterType = "all" | "last-10-days" | "last-20-days" | "last-month" | "last-year" | "upcoming" | "past" | "custom" | "month";
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -8,7 +8,7 @@ import {
   TrendingUp,
   FileText,
   ChevronDown,
-  Loader2,
+  History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeaderAdmin } from "../../components/Admin/Header/HeaderAdmin";
@@ -16,11 +16,20 @@ import { PendingMeetingsList } from "../../components/Admin/Meetings/Pending/Mee
 import { DeniedMeetingsList } from "../../components/Admin/Meetings/Denieds/MeetingsList";
 import { ConfirmedMeetingsList } from "../../components/Admin/Meetings/Confirmeds/MeetingList";
 import { TotalMeetingsList } from "../../components/Admin/Meetings/Total/MeetingList";
+import { HistoricoMeetingsList } from "../../components/Admin/Meetings/Historico/HistoricoMeetingsList";
 import { MeetingForm } from "../../components/User/MeetingForm/MeetingForm";
 import { API_URL } from "../../config/api";
 import { MeetingCalendar } from "../../components/User/ScheduledMeetings/Calendar";
 import type { Meeting as MeetingType } from "../../types/types";
 import { FooterAdmin } from "../../components/Admin/Footer/FooterAdmin";
+import { LoadingScreen } from "../../components/layout/LoadingScreen";
+import { cn } from "../../lib/cn";
+import {
+  filterActiveMeetings,
+  filterPastMeetings,
+  sortMeetingsByDateDesc,
+} from "../../lib/meetingDates";
+import type { TabType } from "../../types/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +56,6 @@ interface Statistics {
   past: number;
 }
 
-type TabType = "total" | "confirmed" | "pending" | "denied";
 type FilterType =
   | "all"
   | "last-10-days"
@@ -77,11 +85,7 @@ const EMPTY_FORM: FormData = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const cls = (...c: (string | false | null | undefined)[]) =>
-  c.filter(Boolean).join(" ");
-
-const INPUT =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-100 focus:outline-none transition-all disabled:bg-gray-50";
+const INPUT = "input input-accent";
 
 // ─── Filter Panel ─────────────────────────────────────────────────────────────
 
@@ -103,23 +107,23 @@ function FilterPanel({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 mb-5 overflow-hidden">
+    <div className="card mb-5 overflow-hidden">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Filter size={15} className="text-purple-500" />
+          <Filter size={15} className="text-accent-600" />
           Filtros
         </div>
-        <ChevronDown size={16} className={cls("text-gray-400 transition-transform duration-200", open && "rotate-180")} />
+        <ChevronDown size={16} className={cn("text-slate-400 transition-transform duration-200", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+        <div className="border-t border-surface-border px-5 py-4 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Período</label>
+              <label className="label">Período</label>
               <select value={activeFilter} onChange={(e) => setActiveFilter(e.target.value as FilterType)} className={INPUT}>
                 <option value="all">Todas</option>
                 <option value="last-10-days">Últimos 10 dias</option>
@@ -133,7 +137,7 @@ function FilterPanel({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
+              <label className="label">Status</label>
               <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className={INPUT}>
                 <option value="all">Todos</option>
                 <option value="confirmed">Confirmadas</option>
@@ -143,28 +147,28 @@ function FilterPanel({
             </div>
             {activeFilter === "month" && (
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Mês</label>
+                <label className="label">Mês</label>
                 <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className={INPUT} />
               </div>
             )}
             {activeFilter === "custom" && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Data inicial</label>
+                  <label className="label">Data inicial</label>
                   <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Data final</label>
+                  <label className="label">Data final</label>
                   <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className={INPUT} />
                 </div>
               </>
             )}
           </div>
           <div className="flex gap-2 pt-1">
-            <button onClick={onClear} className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button onClick={onClear} className="btn-secondary">
               Limpar
             </button>
-            <button onClick={onApply} className="px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
+            <button onClick={onApply} className="btn-primary-accent">
               <TrendingUp size={14} /> Aplicar
             </button>
           </div>
@@ -180,8 +184,8 @@ function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: s
   return (
     <div className="flex items-center gap-2">
       {icon}
-      <h2 className="text-base font-bold text-gray-700">{title}</h2>
-      <span className="text-xs text-gray-400 font-medium">
+      <h2 className="text-base font-bold text-slate-800">{title}</h2>
+      <span className="text-xs text-slate-400 font-medium">
         ({count} {count === 1 ? "reunião" : "reuniões"})
       </span>
     </div>
@@ -349,24 +353,47 @@ export function HomeADMIN() {
     setSelectedMonth("");
   };
 
+  /** União de todas as listas (evita perder reuniões quando o filtro da aba Total está restrito) */
+  const allMeetingsMerged = useMemo(() => {
+    const map = new Map<number, Meeting>();
+    for (const m of [
+      ...totalMeetings,
+      ...confirmedMeetings,
+      ...pendingMeetings,
+      ...deniedMeetings,
+    ]) {
+      const prev = map.get(m.id);
+      map.set(m.id, prev ? { ...prev, ...m, status: m.status ?? prev.status } : m);
+    }
+    return Array.from(map.values());
+  }, [totalMeetings, confirmedMeetings, pendingMeetings, deniedMeetings]);
+
+  const activeTotal     = useMemo(() => filterActiveMeetings(totalMeetings), [totalMeetings]);
+  const activeConfirmed = useMemo(() => filterActiveMeetings(confirmedMeetings), [confirmedMeetings]);
+  const activePending   = useMemo(() => filterActiveMeetings(pendingMeetings), [pendingMeetings]);
+  const activeDenied    = useMemo(() => filterActiveMeetings(deniedMeetings), [deniedMeetings]);
+  const historicoMeetings = useMemo(
+    () => sortMeetingsByDateDesc(filterPastMeetings(allMeetingsMerged)),
+    [allMeetingsMerged],
+  );
+
   // ─── Tabs ──────────────────────────────────────────────────────────────────
 
   const TABS: { key: TabType; label: string; icon: React.ReactNode; count: number; activeColor: string }[] = [
-    { key: "total",     label: "Todas",       icon: <List size={15} />,        count: totalMeetings.length,     activeColor: "bg-gray-800 text-white"   },
-    { key: "confirmed", label: "Confirmadas", icon: <CheckCircle size={15} />, count: confirmedMeetings.length, activeColor: "bg-emerald-600 text-white" },
-    { key: "pending",   label: "Pendentes",   icon: <Clock size={15} />,       count: pendingMeetings.length,   activeColor: "bg-amber-500 text-white"  },
-    { key: "denied",    label: "Negadas",     icon: <XCircle size={15} />,     count: deniedMeetings.length,    activeColor: "bg-red-600 text-white"    },
+    { key: "total",     label: "Todas",       icon: <List size={15} />,        count: activeTotal.length,     activeColor: "bg-slate-800 text-white"   },
+    { key: "confirmed", label: "Confirmadas", icon: <CheckCircle size={15} />, count: activeConfirmed.length, activeColor: "bg-emerald-600 text-white" },
+    { key: "pending",   label: "Pendentes",   icon: <Clock size={15} />,       count: activePending.length,   activeColor: "bg-amber-500 text-white"  },
+    { key: "denied",    label: "Negadas",     icon: <XCircle size={15} />,     count: activeDenied.length,    activeColor: "bg-red-600 text-white"    },
+    { key: "historico", label: "Histórico",   icon: <History size={15} />,     count: historicoMeetings.length, activeColor: "bg-slate-600 text-white" },
   ];
 
   // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 size={36} className="text-purple-600 animate-spin" />
-          <p className="text-sm text-gray-500 font-medium">Carregando...</p>
-        </div>
+      <div className="page-shell-admin min-h-screen flex flex-col">
+        <HeaderAdmin />
+        <LoadingScreen message="Carregando reuniões..." role="admin" />
       </div>
     );
   }
@@ -374,33 +401,27 @@ export function HomeADMIN() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-shell-admin flex flex-col min-h-screen">
       <HeaderAdmin />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <div className="page-container flex-1 space-y-6">
 
-        {/* ── Top bar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-0.5">
-              Painel administrativo
-            </p>
-            <h1 className="text-2xl font-bold text-gray-800">Gestão de Reuniões</h1>
+            <p className="section-eyebrow-accent">Painel administrativo</p>
+            <h1 className="section-title">Gestão de Reuniões</h1>
             {statistics && (
-              <p className="text-gray-500 text-sm mt-0.5">
+              <p className="section-subtitle">
                 {statistics.total} reunião{statistics.total !== 1 ? "ões" : ""} cadastrada{statistics.total !== 1 ? "s" : ""}
                 {" · "}
-                <span className="text-purple-500 font-medium">
+                <span className="text-accent-600 font-medium">
                   Clique em um dia no calendário para agendar
                 </span>
               </p>
             )}
           </div>
 
-          <Link
-            to="/admin/reports"
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-          >
+          <Link to="/admin/reports" className="btn-secondary self-start sm:self-auto">
             <FileText size={15} />
             Relatórios
           </Link>
@@ -410,6 +431,7 @@ export function HomeADMIN() {
         {showForm && (
           <div id="admin-meeting-form">
             <MeetingForm
+              role="admin"
               formData={formData}
               modoEdicao={false}
               onFormChange={setFormData}
@@ -420,24 +442,24 @@ export function HomeADMIN() {
         )}
 
         {/* ── Tabs ── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-1 flex gap-1 flex-wrap">
+        <div className="tab-group">
           {TABS.map(({ key, label, icon, count, activeColor }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={cls(
-                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                activeTab === key
-                  ? activeColor + " shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              className={cn(
+                activeTab === key ? "tab-item-active" : "tab-item-inactive",
+                activeTab === key && activeColor,
               )}
             >
               {icon}
               {label}
-              <span className={cls(
-                "text-xs px-1.5 py-0.5 rounded-full font-bold",
-                activeTab === key ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500"
-              )}>
+              <span
+                className={cn(
+                  "text-xs px-1.5 py-0.5 rounded-full font-bold",
+                  activeTab === key ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500",
+                )}
+              >
                 {count}
               </span>
             </button>
@@ -457,29 +479,43 @@ export function HomeADMIN() {
                 onApply={() => loadTotalMeetingsWithFilter(activeFilter)}
                 onClear={clearFilters}
               />
-              <SectionHeader icon={<List size={16} className="text-gray-500" />} title="Todas as Reuniões" count={totalMeetings.length} />
-              <TotalMeetingsList meetings={totalMeetings} />
+              <SectionHeader icon={<List size={16} className="text-slate-500" />} title="Reuniões Ativas" count={activeTotal.length} />
+              <TotalMeetingsList meetings={activeTotal} />
             </div>
           )}
 
           {activeTab === "pending" && (
             <div className="space-y-4">
-              <SectionHeader icon={<Clock size={16} className="text-amber-500" />} title="Reuniões Pendentes" count={pendingMeetings.length} />
-              <PendingMeetingsList meetings={pendingMeetings} onApprove={handleApproveMeeting} onDeny={handleDenyMeeting} />
+              <SectionHeader icon={<Clock size={16} className="text-amber-500" />} title="Reuniões Pendentes" count={activePending.length} />
+              <PendingMeetingsList meetings={activePending} onApprove={handleApproveMeeting} onDeny={handleDenyMeeting} />
             </div>
           )}
 
           {activeTab === "confirmed" && (
             <div className="space-y-4">
-              <SectionHeader icon={<CheckCircle size={16} className="text-emerald-500" />} title="Reuniões Confirmadas" count={confirmedMeetings.length} />
-              <ConfirmedMeetingsList meetings={confirmedMeetings} onUpdate={loadAllMeetings} />
+              <SectionHeader icon={<CheckCircle size={16} className="text-emerald-500" />} title="Reuniões Confirmadas" count={activeConfirmed.length} />
+              <ConfirmedMeetingsList meetings={activeConfirmed} onUpdate={loadAllMeetings} />
             </div>
           )}
 
           {activeTab === "denied" && (
             <div className="space-y-4">
-              <SectionHeader icon={<XCircle size={16} className="text-red-500" />} title="Reuniões Negadas" count={deniedMeetings.length} />
-              <DeniedMeetingsList meetings={deniedMeetings} onRestore={handleRestoreMeeting} onDelete={handleDeleteMeeting} />
+              <SectionHeader icon={<XCircle size={16} className="text-red-500" />} title="Reuniões Negadas" count={activeDenied.length} />
+              <DeniedMeetingsList meetings={activeDenied} onRestore={handleRestoreMeeting} onDelete={handleDeleteMeeting} />
+            </div>
+          )}
+
+          {activeTab === "historico" && (
+            <div className="space-y-4">
+              <SectionHeader
+                icon={<History size={16} className="text-slate-500" />}
+                title="Histórico de Reuniões"
+                count={historicoMeetings.length}
+              />
+              <p className="text-sm text-slate-500 -mt-2">
+                Reuniões já encerradas. Elas continuam visíveis no calendário, mas não aparecem nas outras abas.
+              </p>
+              <HistoricoMeetingsList meetings={historicoMeetings} />
             </div>
           )}
         </div>

@@ -129,10 +129,8 @@ async function authenticate(
   }
 }
 
-// ─── Helpers de estilo ────────────────────────────────────────────────────────
-
-const INPUT =
-  "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed";
+import { cn } from "../../lib/cn";
+import { roleTheme } from "../../theme/variants";
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
@@ -151,21 +149,7 @@ export default function Login() {
   const isAdmin    = tipoLogin === "admin";
   const clearError = () => setError("");
 
-  const accentFocus  = isAdmin
-    ? "focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
-    : "focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
-
-  const accentButton = isAdmin
-    ? "bg-purple-600 hover:bg-purple-700"
-    : "bg-gray-800 hover:bg-gray-900";
-
-  const accentConfirm = isAdmin
-    ? "bg-purple-600 hover:bg-purple-700"
-    : "bg-blue-600 hover:bg-blue-700";
-
-  const accentBadge = isAdmin ? "text-purple-700" : "text-blue-700";
-  const accentIcon  = isAdmin ? "bg-purple-50"    : "bg-blue-50";
-  const accentColor = isAdmin ? "text-purple-600"  : "text-blue-600";
+  const theme = roleTheme[isAdmin ? "admin" : "user"];
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -215,182 +199,225 @@ export default function Login() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-
-        {/* Card principal */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-
-          {/* Header */}
-          <div className="px-6 pt-8 pb-6 text-center border-b border-gray-100">
-            <div className={`w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center ${accentIcon}`}>
-              {isAdmin
-                ? <Shield size={24} className={accentColor} />
-                : <LogIn  size={24} className={accentColor} />}
-            </div>
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight">
-              {isAdmin ? "Acesso Administrativo" : "Bem-vindo"}
-            </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              Sistema de Gerenciamento de Reuniões
-            </p>
-          </div>
-
-          <div className="px-6 py-6 space-y-4">
-
-            {/* Seletor de tipo */}
-            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(["usuario", "admin"] as LoginType[]).map((tipo) => (
-                <button
-                  key={tipo}
-                  onClick={() => handleTipoLoginChange(tipo)}
-                  disabled={loading}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-150
-                    ${tipoLogin === tipo
-                      ? `bg-white shadow-sm ${tipo === "admin" ? "text-purple-600" : "text-blue-600"}`
-                      : "text-gray-500 hover:text-gray-700"}
-                    disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {tipo === "usuario" ? "Usuário" : "Admin"}
-                </button>
-              ))}
-            </div>
-
-            {/* Erro */}
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2.5"
-              >
-                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-                {error}
-              </div>
-            )}
-
-            {/* Usuário */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                {isAdmin ? "Administrador" : "Usuário"}
-              </label>
-              <div className="relative">
-                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={usuario}
-                  onChange={(e) => { setUsuario(e.target.value); clearError(); }}
-                  onKeyDown={handleKeyDown}
-                  disabled={loading}
-                  placeholder={isAdmin ? "suporte.setor" : "setor.sihs"}
-                  className={`${INPUT} pl-9 ${accentFocus}`}
-                />
-              </div>
-            </div>
-
-            {/* Senha */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                Senha
-              </label>
-              <div className="relative">
-                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); clearError(); }}
-                  onKeyDown={handleKeyDown}
-                  disabled={loading}
-                  placeholder="••••••••"
-                  className={`${INPUT} pl-9 pr-10 ${accentFocus}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  disabled={loading}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition-colors mt-2
-                ${accentButton} disabled:opacity-70 disabled:cursor-not-allowed`}
-            >
-              {loading
-                ? <><Loader2 size={14} className="animate-spin" /> Entrando...</>
-                : <>{isAdmin ? <Shield size={14} /> : <LogIn size={14} />}
-                   {isAdmin ? "Entrar como Administrador" : "Entrar"}</>}
-            </button>
-          </div>
+    <div className="min-h-screen flex">
+      {/* Painel institucional — desktop */}
+      <aside className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900 text-white p-10 flex-col justify-between">
+        <div className="absolute inset-0 opacity-[0.07]" aria-hidden>
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white" />
+          <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-white translate-y-1/2 -translate-x-1/4" />
         </div>
-
-        {/* Rodapé */}
-        <p className="text-center text-xs text-gray-400 mt-4">
-          SIHS · Secretaria de Infraestrutura Hídrica e Saneamento
+        <div className="relative z-10">
+          <p className="text-brand-200 text-sm font-semibold tracking-widest uppercase mb-6">
+            SIHS Meet
+          </p>
+          <h1 className="text-3xl xl:text-4xl font-bold leading-tight tracking-tight">
+            Agendamento inteligente de reuniões
+          </h1>
+          <p className="text-brand-100/90 mt-4 text-base leading-relaxed max-w-md">
+            Gerencie salas, horários e aprovações em um só lugar — com visão clara do calendário e fluxo simplificado.
+          </p>
+        </div>
+        <p className="relative z-10 text-sm text-brand-200/80">
+          Secretaria de Infraestrutura Hídrica e Saneamento
         </p>
-      </div>
+      </aside>
 
-      {/* ── Modal de confirmação ── */}
+      {/* Formulário */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-slate-50 via-white to-brand-50/30">
+        <div className="w-full max-w-[400px] animate-fade-in">
+          <div className="card-elevated overflow-hidden">
+            <div className="px-6 sm:px-8 pt-8 pb-6 text-center border-b border-surface-border bg-slate-50/50">
+              <div
+                className={cn(
+                  "w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-card",
+                  theme.iconBg,
+                )}
+              >
+                {isAdmin ? (
+                  <Shield size={26} className={theme.iconColor} />
+                ) : (
+                  <LogIn size={26} className={theme.iconColor} />
+                )}
+              </div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                {isAdmin ? "Acesso Administrativo" : "Bem-vindo de volta"}
+              </h1>
+              <p className="text-sm text-slate-500 mt-1">
+                Entre para gerenciar suas reuniões
+              </p>
+            </div>
+
+            <div className="px-6 sm:px-8 py-6 space-y-5">
+              <div className="segmented" role="tablist" aria-label="Tipo de acesso">
+                {(["usuario", "admin"] as LoginType[]).map((tipo) => {
+                  const active = tipoLogin === tipo;
+                  const t = roleTheme[tipo === "admin" ? "admin" : "user"];
+                  return (
+                    <button
+                      key={tipo}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => handleTipoLoginChange(tipo)}
+                      disabled={loading}
+                      className={cn(
+                        active ? "segmented-item-active" : "segmented-item-inactive",
+                        active && t.segmentedActive,
+                      )}
+                    >
+                      {tipo === "usuario" ? "Usuário" : "Admin"}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {error && (
+                <div role="alert" className="alert-error text-xs">
+                  <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label className="label" htmlFor="login-user">
+                  {isAdmin ? "Administrador" : "Usuário"}
+                </label>
+                <div className="relative">
+                  <User
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
+                  <input
+                    id="login-user"
+                    type="text"
+                    autoComplete="username"
+                    value={usuario}
+                    onChange={(e) => {
+                      setUsuario(e.target.value);
+                      clearError();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    disabled={loading}
+                    placeholder={isAdmin ? "suporte.setor" : "setor.sihs"}
+                    className={cn("input pl-10", theme.inputFocus)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="login-password">
+                  Senha
+                </label>
+                <div className="relative">
+                  <Lock
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
+                  <input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      clearError();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    disabled={loading}
+                    placeholder="••••••••"
+                    className={cn("input pl-10 pr-11", theme.inputFocus)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    disabled={loading}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className={cn("w-full !py-3", theme.btnPrimary)}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Entrando...
+                  </>
+                ) : (
+                  <>
+                    {isAdmin ? <Shield size={16} /> : <LogIn size={16} />}
+                    {isAdmin ? "Entrar como Administrador" : "Entrar"}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-slate-400 mt-5 lg:hidden">
+            SIHS · Secretaria de Infraestrutura Hídrica e Saneamento
+          </p>
+        </div>
+      </main>
+
       {modalOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          aria-labelledby="login-success-title"
+          className="modal-overlay"
           onClick={() => setModalOpen(false)}
         >
-          <div
-            className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-sm w-full overflow-hidden"
-            style={{ animation: "slideUp 0.2s ease-out" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header modal */}
-            <div className="px-6 pt-6 pb-5 border-b border-gray-100 text-center relative">
+          <div className="modal-panel max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 pt-6 pb-5 border-b border-surface-border text-center relative">
               <button
                 onClick={() => setModalOpen(false)}
                 aria-label="Fechar"
-                className="absolute right-4 top-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="absolute right-4 top-4 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
-              <div className={`w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center ${accentIcon}`}>
-                {isAdmin
-                  ? <Shield      size={24} className={accentColor} />
-                  : <CheckCircle size={24} className={accentColor} />}
+              <div
+                className={cn(
+                  "w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center",
+                  theme.iconBg,
+                )}
+              >
+                {isAdmin ? (
+                  <Shield size={24} className={theme.iconColor} />
+                ) : (
+                  <CheckCircle size={24} className={theme.iconColor} />
+                )}
               </div>
-              <h2 className="text-base font-bold text-gray-800">Login realizado com sucesso</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Confirme seus dados antes de continuar</p>
+              <h2 id="login-success-title" className="text-base font-bold text-slate-900">
+                Login realizado com sucesso
+              </h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Confirme seus dados antes de continuar
+              </p>
             </div>
 
-            {/* Corpo modal */}
             <div className="px-6 py-5 space-y-4">
               <div className="space-y-2">
                 {[
-                  { label: "Usuário",        value: usuario                               },
+                  { label: "Usuário", value: usuario },
                   { label: "Tipo de acesso", value: isAdmin ? "Administrador" : "Usuário" },
                 ].map(({ label, value }) => (
-                  <div key={label} className="bg-gray-50 rounded-lg px-4 py-3">
-                    <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-                    <p className={`text-sm font-bold ${accentBadge}`}>{value}</p>
+                  <div key={label} className="info-chip">
+                    <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+                    <p className={cn("text-sm font-bold", theme.iconColor)}>{value}</p>
                   </div>
                 ))}
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 py-2.5 text-sm font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
+                <button onClick={() => setModalOpen(false)} className="btn-secondary flex-1">
                   Cancelar
                 </button>
-                <button
-                  onClick={handleConfirmLogin}
-                  className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg shadow-sm transition-colors ${accentConfirm}`}
-                >
+                <button onClick={handleConfirmLogin} className={cn("flex-1", theme.btnPrimary)}>
                   Confirmar
                 </button>
               </div>
@@ -398,13 +425,6 @@ export default function Login() {
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0);    }
-        }
-      `}</style>
     </div>
   );
 }

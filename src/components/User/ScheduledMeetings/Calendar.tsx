@@ -157,26 +157,25 @@ function NewMeetingPrompt({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="modal-overlay"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
-        style={{ animation: "slideUp 0.2s ease-out" }}
+        className="modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+        <div className="bg-gradient-to-r from-brand-600 to-brand-800 p-6 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-blue-200 text-sm font-medium mb-1">
+              <p className="text-brand-200 text-sm font-medium mb-1">
                 Nova reunião
               </p>
               <h3 className="text-xl font-bold">
                 {diaSemana}, {dataFormatada}
               </h3>
               {existingMeetings.length > 0 && (
-                <p className="text-blue-200 text-xs mt-1">
+                <p className="text-brand-200 text-xs mt-1">
                   {existingMeetings.length} reunião
                   {existingMeetings.length !== 1 ? "ões" : ""} já agendada
                   {existingMeetings.length !== 1 ? "s" : ""} neste dia
@@ -208,7 +207,7 @@ function NewMeetingPrompt({
                 type="time"
                 value={form.start_time}
                 onChange={(e) => handleChange("start_time", e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="input input-brand"
               />
             </div>
             <div className="w-full max-w-xs sm:max-w-none">
@@ -219,7 +218,7 @@ function NewMeetingPrompt({
                 type="time"
                 value={form.end_time}
                 onChange={(e) => handleChange("end_time", e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="input input-brand"
               />
             </div>
           </div>
@@ -302,7 +301,7 @@ function NewMeetingPrompt({
               className={`flex-1 font-semibold py-3 rounded-xl transition-all shadow-sm text-white flex items-center justify-center gap-2 text-sm ${
                 hasConflict
                   ? "bg-amber-500 hover:bg-amber-600"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  : "bg-brand-600 hover:bg-brand-700"
               }`}
             >
               <Plus size={16} className="flex-shrink-0" />
@@ -312,12 +311,6 @@ function NewMeetingPrompt({
         </div>
       </div>
 
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -339,7 +332,7 @@ function MeetingPill({
         e.stopPropagation();
         onClick(meeting);
       }}
-      className={`w-full text-left bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-150 shadow-sm hover:shadow-md ${
+      className={`w-full text-left bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-all duration-150 shadow-sm hover:shadow-md ${
         compact ? "px-2 py-1" : "px-3 py-2"
       }`}
     >
@@ -349,7 +342,7 @@ function MeetingPill({
         {meeting.title}
       </p>
       {!compact && (
-        <p className="text-blue-200 text-xs mt-0.5 flex items-center gap-1">
+        <p className="text-brand-200 text-xs mt-0.5 flex items-center gap-1">
           <Clock size={10} />
           {formatHour(meeting.start_time)}
           {meeting.end_time && ` – ${formatHour(meeting.end_time)}`}
@@ -376,19 +369,18 @@ function MeetingModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="modal-overlay"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+        className="modal-panel max-w-lg"
         onClick={(e) => e.stopPropagation()}
-        style={{ animation: "slideUp 0.2s ease-out" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+        <div className="bg-gradient-to-r from-brand-600 to-brand-800 p-6 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-blue-200 text-sm font-medium mb-1">
+              <p className="text-brand-200 text-sm font-medium mb-1">
                 {diaSemana}, {dataFormatada}
               </p>
               <h3 className="text-xl font-bold leading-tight">
@@ -449,12 +441,6 @@ function MeetingModal({
         </div>
       </div>
 
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -504,7 +490,7 @@ function DayView({
   const past = isPastDay(currentDate);
 
   return (
-    <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+    <div className="card overflow-hidden">
       {/* Day header — clicável para nova reunião apenas em dias futuros/hoje */}
       <button
         onClick={() => !past && onDayClick(currentDate)}
@@ -513,8 +499,8 @@ function DayView({
           past
             ? "bg-gray-100 cursor-not-allowed"
             : isToday
-              ? "bg-blue-50 hover:bg-blue-100"
-              : "bg-gray-50 hover:bg-gray-100"
+              ? "bg-brand-50 hover:bg-brand-100"
+              : "bg-slate-50 hover:bg-slate-100"
         }`}
       >
         <div className="flex items-center justify-between">
@@ -525,7 +511,7 @@ function DayView({
               {DIAS_SEMANA_FULL[currentDate.getDay()]}
             </p>
             <p
-              className={`text-3xl font-bold ${past ? "text-gray-400" : isToday ? "text-blue-600" : "text-gray-800"}`}
+              className={`text-3xl font-bold ${past ? "text-slate-400" : isToday ? "text-brand-600" : "text-slate-800"}`}
             >
               {String(currentDate.getDate()).padStart(2, "0")}
             </p>
@@ -543,7 +529,7 @@ function DayView({
             </p>
           </div>
           {!past && (
-            <div className="flex items-center gap-1.5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+            <div className="flex items-center gap-1.5 text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
               <Plus size={16} />
               <span className="text-xs font-semibold">Nova reunião</span>
             </div>
@@ -605,7 +591,7 @@ function WeekView({
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
-    <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+    <div className="card overflow-hidden">
       {/* Week header — cada dia é clicável */}
       <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
         <div className="p-3 border-r border-gray-200" />
@@ -621,8 +607,8 @@ function WeekView({
                 past
                   ? "bg-gray-100 cursor-not-allowed"
                   : isToday
-                    ? "bg-blue-50 hover:bg-blue-100"
-                    : "hover:bg-gray-100"
+                    ? "bg-brand-50 hover:bg-brand-100"
+                    : "hover:bg-slate-100"
               }`}
             >
               <p
@@ -631,14 +617,14 @@ function WeekView({
                 {DIAS_SEMANA_FULL[day.getDay()]}
               </p>
               <p
-                className={`text-lg font-bold ${past ? "text-gray-400" : isToday ? "text-blue-600" : "text-gray-700"}`}
+                className={`text-lg font-bold ${past ? "text-slate-400" : isToday ? "text-brand-600" : "text-slate-700"}`}
               >
                 {day.getDate()}
               </p>
               {!past && (
                 <Plus
                   size={12}
-                  className="mx-auto text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
+                  className="mx-auto text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
                 />
               )}
             </button>
@@ -717,7 +703,7 @@ function MonthView({
   });
 
   return (
-    <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+    <div className="card overflow-hidden">
       {/* Weekday headers */}
       <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
         {DIAS_SEMANA_FULL.map((d) => (
@@ -749,8 +735,8 @@ function MonthView({
                 past
                   ? "bg-gray-100 cursor-not-allowed"
                   : isToday
-                    ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
-                    : "hover:bg-gray-50 cursor-pointer"
+                    ? "bg-brand-50 hover:bg-brand-100 cursor-pointer"
+                    : "hover:bg-slate-50 cursor-pointer"
               }`}
             >
               {/* Day number */}
@@ -760,8 +746,8 @@ function MonthView({
                     past
                       ? "text-gray-400"
                       : isToday
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-700"
+                        ? "bg-brand-600 text-white"
+                        : "text-slate-700"
                   }`}
                 >
                   {day.getDate()}
@@ -770,7 +756,7 @@ function MonthView({
                 {!past && (
                   <Plus
                     size={14}
-                    className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-brand-500 opacity-0 group-hover:opacity-100 transition-opacity"
                   />
                 )}
               </div>
@@ -881,9 +867,9 @@ export function MeetingCalendar({ onNewMeeting }: MeetingCalendarProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-16 border border-gray-100 flex flex-col items-center justify-center">
-        <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
-        <p className="text-gray-600 font-medium">Carregando calendário...</p>
+      <div className="card p-16 flex flex-col items-center justify-center">
+        <Loader2 size={40} className="text-brand-600 animate-spin mb-4" />
+        <p className="text-slate-600 font-medium">Carregando calendário...</p>
       </div>
     );
   }
@@ -892,7 +878,7 @@ export function MeetingCalendar({ onNewMeeting }: MeetingCalendarProps) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+      <div className="card p-8">
         <div className="flex items-start gap-4 bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl">
           <AlertCircle size={28} className="text-red-500 flex-shrink-0" />
           <div>
@@ -919,14 +905,12 @@ export function MeetingCalendar({ onNewMeeting }: MeetingCalendarProps) {
       {/* ── Top Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-800">
-            Calendário de Reuniões
-          </h2>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <h2 className="section-title">Calendário de Reuniões</h2>
+          <p className="section-subtitle">
             {meetings.length} reunião{meetings.length !== 1 ? "ões" : ""}{" "}
             cadastrada{meetings.length !== 1 ? "s" : ""}
             {" · "}
-            <span className="text-blue-500 font-medium">
+            <span className="text-brand-600 font-medium">
               Clique em um dia para agendar
             </span>
           </p>
@@ -941,16 +925,16 @@ export function MeetingCalendar({ onNewMeeting }: MeetingCalendarProps) {
             <RefreshCw size={18} />
           </button>
 
-          <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+          <div className="segmented">
             {(["day", "week", "month"] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={
                   viewMode === mode
-                    ? "bg-white text-blue-700 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                    ? "segmented-item-active text-brand-700"
+                    : "segmented-item-inactive"
+                }
               >
                 {mode === "day" ? "Dia" : mode === "week" ? "Semana" : "Mês"}
               </button>

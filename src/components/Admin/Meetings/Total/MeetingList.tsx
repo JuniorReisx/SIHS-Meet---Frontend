@@ -24,11 +24,11 @@ export function TotalMeetingsList({ meetings }: MeetingsListProps) {
     return (
       <div className="bg-white rounded-xl shadow-md p-8 text-center">
         <List size={48} className="mx-auto text-gray-300 mb-4" />
-        <p className="text-gray-500 text-lg font-medium">
-          Nenhuma reunião encontrada
+        <p className="text-slate-600 text-lg font-medium">
+          Nenhuma reunião ativa
         </p>
-        <p className="text-gray-400 text-sm mt-2">
-          As reuniões aparecerão aqui quando forem criadas
+        <p className="text-slate-400 text-sm mt-2">
+          Reuniões futuras ou em andamento aparecem aqui. As encerradas ficam na aba Histórico.
         </p>
       </div>
     );
