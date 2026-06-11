@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Save, Clock } from "lucide-react";
 import { API_URL } from '../../../config/api';
+import { ROOM_NAMES } from '../../../config/rooms';
 import type { MeetingFormData } from '../../../types/types';
 
 interface CreateMeetingModalProps {
@@ -158,8 +159,9 @@ export function CreateMeetingModal({ onClose, onSuccess }: CreateMeetingModalPro
                   disabled={loading}
                 >
                   <option value="">Selecione um local</option>
-                  <option value="Reunião Portal da Água">Reunião Portal da Água</option>
-                  <option value="Sala de Reunião">Sala de Reunião</option>
+                  {ROOM_NAMES.map((room) => (
+                    <option key={room} value={room}>{room}</option>
+                  ))}
                 </select>
               </div>
 

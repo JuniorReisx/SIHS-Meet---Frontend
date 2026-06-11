@@ -14,8 +14,12 @@ import {
   Loader2,
   ChevronDown,
   AlertCircle,
+  Monitor,
 } from "lucide-react";
 import { API_URL } from "../../../../config/api";
+import { formatEquipment } from "../../../../config/equipment";
+import { ROOM_NAMES } from "../../../../config/rooms";
+import { convertToPayload } from "../../../../services/meetingService";
 import type { Meeting } from "../../../../types/types";
 
 interface ConfirmedMeetingsListProps {
@@ -84,7 +88,7 @@ function EditForm({
       const res = await fetch(`${API_URL}/meetingsConfirmed/${meeting.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(convertToPayload(formData)),
       });
       if (!res.ok) throw new Error("Erro ao atualizar reunião.");
       onSaved();
@@ -158,7 +162,12 @@ function EditForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <FieldLabel text="Local" />
-              <input type="text" value={formData.location} onChange={(e) => patch({ location: e.target.value })} className={INPUT} disabled={loading} />
+              <select value={formData.location} onChange={(e) => patch({ location: e.target.value })} className={INPUT} disabled={loading}>
+                <option value="">Selecione um local</option>
+                {ROOM_NAMES.map((room) => (
+                  <option key={room} value={room}>{room}</option>
+                ))}
+              </select>
             </div>
             <div>
               <FieldLabel text="Participantes" />
@@ -234,6 +243,8 @@ function ConfirmedMeetingCard({
   const [isEditing, setIsEditing] = useState(false);
   const [deleting,  setDeleting]  = useState(false);
   const [error,     setError]     = useState<string | null>(null);
+  const equipmentText = formatEquipment(meeting.equipment, meeting.other_equipment);
+  const description = meeting.description ?? meeting.MeetingCalendar;
 
   const handleDelete = async () => {
     if (!window.confirm(`Excluir a reunião "${meeting.title}"?`)) return;
@@ -321,10 +332,13 @@ function ConfirmedMeetingCard({
           <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
             <InfoChip icon={<User size={13} className="text-orange-500" />}     label="Responsável"  value={meeting.responsible}            full />
             <InfoChip icon={<Building2 size={13} className="text-gray-400" />}  label="Departamento" value={meeting.responsible_department}  full />
-            {meeting.description && (
+            {equipmentText && (
+              <InfoChip icon={<Monitor size={13} className="text-cyan-500" />} label="Equipamentos" value={equipmentText} full />
+            )}
+            {description && (
               <div className="bg-gray-50 rounded-lg px-3 py-2.5">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Descrição</p>
-                <p className="text-sm text-gray-700 leading-relaxed">{meeting.description}</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{description}</p>
               </div>
             )}
           </div>

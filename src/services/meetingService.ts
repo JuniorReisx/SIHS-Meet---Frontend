@@ -16,6 +16,8 @@ interface MeetingPayload {
   location: string;
   participants_count: number;
   description?: string;
+  equipment?: string[];
+  other_equipment?: string | null;
   responsible: string;
   responsible_department: string;
 }
@@ -30,6 +32,8 @@ interface MeetingResponse {
   location: string;
   participants_count: number;
   description?: string;
+  equipment?: string[];
+  other_equipment?: string | null;
   responsible: string;
   responsible_department: string;
   created_at?: string;
@@ -88,13 +92,16 @@ const convertToMeeting = (response: MeetingResponse): Meeting => {
     location: response.location,
     participants_count: response.participants_count,
     MeetingCalendar: response.description || "",
+    description: response.description || "",
+    equipment: response.equipment ?? [],
+    other_equipment: response.other_equipment ?? "",
     responsible: response.responsible,
     responsible_department: response.responsible_department,
   };
 };
 
 // Função auxiliar para converter Meeting para o formato da API
-const convertToPayload = (meeting: Partial<Meeting>): Partial<MeetingPayload> => {
+export const convertToPayload = (meeting: Partial<Meeting>): Partial<MeetingPayload> => {
   const payload: Partial<MeetingPayload> = {};
   
   if (meeting.title !== undefined) payload.title = meeting.title;
@@ -103,12 +110,23 @@ const convertToPayload = (meeting: Partial<Meeting>): Partial<MeetingPayload> =>
   if (meeting.end_time !== undefined) payload.end_time = meeting.end_time;
   if (meeting.location !== undefined) payload.location = meeting.location;
   if (meeting.participants_count !== undefined) payload.participants_count = meeting.participants_count;
-  if (meeting.MeetingCalendar !== undefined) payload.description = meeting.MeetingCalendar;
+  if (meeting.MeetingCalendar !== undefined || meeting.description !== undefined) {
+    payload.description = meeting.MeetingCalendar ?? meeting.description ?? "";
+  }
+  payload.equipment = meeting.equipment ?? [];
+  if (meeting.other_equipment !== undefined) payload.other_equipment = meeting.other_equipment || null;
   if (meeting.responsible !== undefined) payload.responsible = meeting.responsible;
   if (meeting.responsible_department !== undefined) payload.responsible_department = meeting.responsible_department;
   
   return payload;
 };
+
+function unwrapMeetingResponse(json: unknown): MeetingResponse {
+  if (json && typeof json === "object" && "data" in json && json.data) {
+    return json.data as MeetingResponse;
+  }
+  return json as MeetingResponse;
+}
 
 // ==================== SERVIÇOS DE REUNIÕES ====================
 
@@ -135,8 +153,8 @@ export const createMeeting = async (meeting: Omit<Meeting, "id">): Promise<Meeti
     throw new Error(error.message || "Erro ao criar reunião");
   }
 
-  const data: MeetingResponse = await response.json();
-  return convertToMeeting(data);
+  const json = await response.json();
+  return convertToMeeting(unwrapMeetingResponse(json));
 };
 
 /**
@@ -194,8 +212,8 @@ export const getMeetingById = async (id: number): Promise<Meeting> => {
     throw new Error(error.message || "Erro ao buscar reunião");
   }
 
-  const data: MeetingResponse = await response.json();
-  return convertToMeeting(data);
+  const json = await response.json();
+  return convertToMeeting(unwrapMeetingResponse(json));
 };
 
 /**
@@ -218,8 +236,8 @@ export const updateMeeting = async (
     throw new Error(error.message || "Erro ao atualizar reunião");
   }
 
-  const data: MeetingResponse = await response.json();
-  return convertToMeeting(data);
+  const json = await response.json();
+  return convertToMeeting(unwrapMeetingResponse(json));
 };
 
 /**

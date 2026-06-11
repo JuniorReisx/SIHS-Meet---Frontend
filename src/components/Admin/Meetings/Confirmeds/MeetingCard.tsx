@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCircle, Pencil, Trash2, Calendar, Clock, MapPin, Users, User, Building2, X, Save } from "lucide-react";
 import { API_URL } from "../../../../config/api";
+import { ROOM_NAMES } from "../../../../config/rooms";
 import type { Meeting } from "../../../../types/types";
 
 interface ConfirmedMeetingsListProps {
@@ -135,12 +136,16 @@ function ConfirmedMeetingCard({ meeting, onUpdate }: { meeting: Meeting; onUpdat
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Local</label>
-              <input
-                type="text"
+              <select
                 value={formData.location}
                 onChange={(e) => setFormData({...formData, location: e.target.value})}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
-              />
+              >
+                <option value="">Selecione um local</option>
+                {ROOM_NAMES.map((room) => (
+                  <option key={room} value={room}>{room}</option>
+                ))}
+              </select>
             </div>
 
             <div>

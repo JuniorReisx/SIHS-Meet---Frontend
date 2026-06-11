@@ -1,6 +1,8 @@
-import { Calendar, Clock, MapPin, Users, User, Building2, X, Check, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, User, Building2, X, Check, ChevronDown, Loader2, AlertCircle, Monitor } from "lucide-react";
 import { useState } from "react";
 import { API_URL } from "../../../../config/api";
+import { formatEquipment } from "../../../../config/equipment";
+import { convertToPayload } from "../../../../services/meetingService";
 import type { Meeting } from "../../../../types/types";
 
 interface Props {
@@ -60,7 +62,7 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
       const res = await fetch(`${API_URL}/meetingsConfirmed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(meeting),
+        body: JSON.stringify(convertToPayload(meeting)),
       });
       if (!res.ok) throw new Error("Erro ao aprovar reunião.");
 
@@ -82,7 +84,7 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
       const res = await fetch(`${API_URL}/meetingsDenied`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(meeting),
+        body: JSON.stringify(convertToPayload(meeting)),
       });
       if (!res.ok) throw new Error("Erro ao negar reunião.");
 
@@ -98,6 +100,8 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
   };
 
   const busy = loading !== null;
+  const equipmentText = formatEquipment(meeting.equipment, meeting.other_equipment);
+  const description = meeting.description ?? meeting.MeetingCalendar;
 
   return (
     <div className="card-interactive overflow-hidden">
@@ -137,10 +141,13 @@ export function PendingMeetingCard({ meeting, onApprove, onDeny }: Props) {
           <div className="mt-2 pt-3 border-t border-surface-border space-y-2 mb-2">
             <InfoChip icon={<User size={13} className="text-orange-500" />}     label="Responsável"  value={meeting.responsible}           full />
             <InfoChip icon={<Building2 size={13} className="text-gray-400" />}  label="Departamento" value={meeting.responsible_department} full />
-            {meeting.description && (
+            {equipmentText && (
+              <InfoChip icon={<Monitor size={13} className="text-cyan-500" />} label="Equipamentos" value={equipmentText} full />
+            )}
+            {description && (
               <div className="info-chip">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Descrição</p>
-                <p className="text-sm text-slate-700 leading-relaxed">{meeting.description}</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{description}</p>
               </div>
             )}
           </div>

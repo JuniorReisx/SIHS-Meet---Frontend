@@ -17,6 +17,8 @@ const EMPTY_FORM: MeetingFormData = {
   location: "",
   participants_count: 0,
   MeetingCalendar: "",
+  equipment: [],
+  other_equipment: "",
   responsible: "",
   responsible_department: "",
 };

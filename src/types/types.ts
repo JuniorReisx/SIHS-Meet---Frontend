@@ -32,6 +32,8 @@ export interface Meeting {
   responsible_department: string;
   MeetingCalendar?: string;
   description?: string;
+  equipment?: string[];
+  other_equipment?: string;
   status?: 'confirmed' | 'pending' | 'denied';
 }
 
@@ -56,6 +58,8 @@ export interface MeetingFormData {
   location: string;
   participants_count: number;
   description: string;
+  equipment?: string[];
+  other_equipment?: string;
   responsible: string;
   responsible_department: string;
 }

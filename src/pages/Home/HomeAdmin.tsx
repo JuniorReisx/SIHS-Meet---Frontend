@@ -64,6 +64,8 @@ const EMPTY_FORM: FormData = {
   location: "",
   participants_count: 0,
   MeetingCalendar: "",
+  equipment: [],
+  other_equipment: "",
   responsible: "",
   responsible_department: "",
 };

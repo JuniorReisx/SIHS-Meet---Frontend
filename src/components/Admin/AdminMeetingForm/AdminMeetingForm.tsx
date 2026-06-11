@@ -1,13 +1,5 @@
 import { Save, Monitor, Tv, Volume2, Coffee, Utensils, Info } from "lucide-react";
-
-// ─── Room Configurations ──────────────────────────────────────────────────────
-const ROOM_CONFIG: Record<
-  string,
-  { capacity: number; hasService: boolean; hasCoffee: boolean }
-> = {
-  "Reunião Portal da Água": { capacity: 20, hasService: true, hasCoffee: true },
-  "Sala de Reunião": { capacity: 10, hasService: false, hasCoffee: true },
-};
+import { ROOM_CONFIG } from "../../../config/rooms";
 
 const EQUIPMENT_OPTIONS = [
   { id: "projetor", label: "Projetor", icon: Monitor },

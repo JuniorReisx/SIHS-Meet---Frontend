@@ -11,7 +11,9 @@ import {
   X,
   Plus,
   TriangleAlert,
+  Monitor,
 } from "lucide-react";
+import { formatEquipment } from "../../../config/equipment";
 import { getAllMeetings } from "../../../services/meetingService";
 import type { Meeting } from "../../../types/types";
 
@@ -366,6 +368,7 @@ function MeetingModal({
   const dataFormatada = `${String(date.getDate()).padStart(2, "0")}/${String(
     date.getMonth() + 1,
   ).padStart(2, "0")}/${date.getFullYear()}`;
+  const equipmentText = formatEquipment(meeting.equipment, meeting.other_equipment);
 
   return (
     <div
@@ -422,6 +425,16 @@ function MeetingModal({
             bg="bg-purple-50"
             full
           />
+
+          {equipmentText && (
+            <InfoCard
+              icon={<Monitor size={16} className="text-cyan-600" />}
+              label="Equipamentos"
+              value={equipmentText}
+              bg="bg-cyan-50"
+              full
+            />
+          )}
 
           {meeting.responsible && (
             <InfoCard

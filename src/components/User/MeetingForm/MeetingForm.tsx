@@ -7,13 +7,7 @@ import { createMeeting, updateMeeting, getAllMeetings } from "../../../services/
 import type { Meeting } from "../../../types/types";
 import { cn } from "../../../lib/cn";
 import { roleTheme, type AppRole } from "../../../theme/variants";
-
-// ─── Configurações ────────────────────────────────────────────────────────────
-
-const ROOM_CONFIG: Record<string, { capacity: number; hasService: boolean; hasCoffee: boolean }> = {
-  "Reunião Portal da Água": { capacity: 20, hasService: true,  hasCoffee: true  },
-  "Sala de Reunião":        { capacity: 10, hasService: false, hasCoffee: true  },
-};
+import { ROOM_CONFIG } from "../../../config/rooms";
 
 const EQUIPMENT_OPTIONS = [
   { id: "projetor", label: "Projetor",       icon: Monitor },
